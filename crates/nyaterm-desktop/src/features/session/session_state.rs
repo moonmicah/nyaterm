@@ -172,7 +172,7 @@ impl NyaTermApp {
             // Reset stays `cx`-free: it is pure remote state. The GPUI-facing resync is
             // the next line, so the ordering is reset -> resync -> (caller's surface
             // sync) -> paint, all inside this transaction.
-            self.reset_remote_runtime_for_session_switch();
+            self.reset_remote_runtime_for_session_switch(session_id);
             self.sync_remote_panels_after_activation(cx);
         }
         // Keep workspace_split mirrored to the active tab's per-tab pane root.
@@ -216,8 +216,9 @@ impl NyaTermApp {
         previous_session_id
     }
 
-    fn reset_remote_runtime_for_session_switch(&mut self) {
+    fn reset_remote_runtime_for_session_switch(&mut self, session_id: &str) {
         self.remote_ops.reset_for_session_switch();
+        self.remote_ops.activate_stats_session(session_id);
     }
 
     pub(in crate::features) fn activate_session_id_with_surface_sync(

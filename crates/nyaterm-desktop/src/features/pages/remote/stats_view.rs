@@ -16,6 +16,7 @@ use nyaterm_ui::NyaScrollable;
 use std::sync::Arc;
 
 use super::panels::{PanelChrome, RemoteMonitorKind, RemoteMonitorPanel};
+use crate::features::remote::NetworkHistorySample;
 use crate::features::remote::StatsPresentationState;
 use crate::features::remote::{
     ACCELERATOR_PROCESS_VIEWPORT_ROWS, GpuPresentationState, NpuPresentationState, max_list_offset,
@@ -388,12 +389,81 @@ pub(in crate::features::pages::remote) fn stats_panel(
                                     )),
                             ),
                     ))
-                .child(resource_section_card(palette, "icons/network.svg", network_label, network_rows))
+                .child(resource_section_card(
+                    palette,
+                    "icons/network.svg",
+                    network_label,
+                    div()
+                        .flex()
+                        .flex_col()
+                        .gap_2()
+                        .when(!stats_state.network_history.is_empty(), |this| {
+                            this.child(resource_network_history_chart(
+                                palette,
+                                stats_state.network_history.clone(),
+                            ))
+                        })
+                        .child(network_rows),
+                ))
                 .child(resource_section_card(palette, "icons/file/storage.svg", disk_label, disk_rows))
                 .overflow_y_scrollbar()
                 .id(SharedString::from("stats-scroll")),
             )
             .into_any_element()
+}
+
+fn resource_network_history_chart(
+    palette: crate::theme::ThemePalette,
+    history: Arc<[NetworkHistorySample]>,
+) -> gpui::Div {
+    let rx_color = rgb(palette.success);
+    let tx_color = rgb(palette.primary);
+    div()
+        .relative()
+        .h(px(72.))
+        .w_full()
+        .rounded_sm()
+        .border_1()
+        .border_color(rgb(palette.border))
+        .bg(rgb(palette.surface))
+        .child(
+            gpui::canvas(
+                move |_, _, _| {},
+                move |bounds, _, window, _| {
+                    let max_rate = history
+                        .iter()
+                        .flat_map(|sample| [sample.rx_bytes_per_sec, sample.tx_bytes_per_sec])
+                        .fold(1.0_f64, f64::max);
+                    for (is_rx, color) in [(true, rx_color), (false, tx_color)] {
+                        let mut builder = gpui::PathBuilder::stroke(px(1.5));
+                        let count = history.len().max(2);
+                        for (index, sample) in history.iter().enumerate() {
+                            let rate = if is_rx {
+                                sample.rx_bytes_per_sec
+                            } else {
+                                sample.tx_bytes_per_sec
+                            };
+                            let x = bounds.origin.x
+                                + bounds.size.width * (index as f32 / (count - 1) as f32);
+                            let y = bounds.origin.y
+                                + bounds.size.height
+                                    * (1.0 - (rate / max_rate).clamp(0.0, 1.0) as f32);
+                            let point = gpui::point(x, y);
+                            if index == 0 {
+                                builder.move_to(point);
+                            } else {
+                                builder.line_to(point);
+                            }
+                        }
+                        if let Ok(path) = builder.build() {
+                            window.paint_path(path, color);
+                        }
+                    }
+                },
+            )
+            .absolute()
+            .inset_0(),
+        )
 }
 
 /// The GPU panel, rendered from a snapshot. See `stats_panel` on why there is no app.
