@@ -12,6 +12,9 @@ const LEGACY_READY_MARKER_PREFIX: &str = "7777;DflyReady:";
 const LEGACY_COMMAND_MARKER_PREFIX: &str = "7777;DflyCommand:";
 const MAX_OSC_BUF: usize = 64 * 1024;
 const SUPPRESSED_OUTPUT_LIMIT: usize = 64 * 1024;
+pub(super) const SSH_INTEGRATION_TIMEOUT: Duration = Duration::from_secs(8);
+const SUPPRESSION_DIAGNOSTIC_INITIAL: Duration = Duration::from_secs(1);
+const SUPPRESSION_DIAGNOSTIC_INTERVAL: Duration = Duration::from_secs(2);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum ShellKind {
@@ -83,6 +86,9 @@ pub(super) struct SshShellIntegrationState {
     stripper: OscStripper,
     suppress_started_at: Option<Instant>,
     suppressed_visible_bytes: usize,
+    suppressed_rx_bytes: usize,
+    suppressed_rx_chunks: usize,
+    last_diagnostic_at: Option<Instant>,
 }
 
 impl SshShellIntegrationState {
@@ -102,6 +108,9 @@ impl SshShellIntegrationState {
             stripper: OscStripper::new(&ready_marker, legacy_ready_marker.as_deref()),
             suppress_started_at: None,
             suppressed_visible_bytes: 0,
+            suppressed_rx_bytes: 0,
+            suppressed_rx_chunks: 0,
+            last_diagnostic_at: None,
         }
     }
 
@@ -128,6 +137,10 @@ impl SshShellIntegrationState {
         if channel.data_bytes(script).await.is_ok() {
             self.phase = SshShellIntegrationPhase::Suppressing;
             self.suppress_started_at = Some(Instant::now());
+            self.suppressed_visible_bytes = 0;
+            self.suppressed_rx_bytes = 0;
+            self.suppressed_rx_chunks = 0;
+            self.last_diagnostic_at = None;
         } else {
             self.force_normal();
         }
@@ -135,8 +148,19 @@ impl SshShellIntegrationState {
 
     pub(super) fn force_normal_after_timeout(&mut self) -> SshIntegrationOutput {
         let flushed = self.stripper.flush();
+        let elapsed_ms = self
+            .suppress_started_at
+            .map(|started| started.elapsed().as_millis())
+            .unwrap_or_default();
+        tracing::warn!(
+            elapsed_ms,
+            suppressed_rx_bytes = self.suppressed_rx_bytes,
+            suppressed_rx_chunks = self.suppressed_rx_chunks,
+            suppressed_visible_bytes = self.suppressed_visible_bytes,
+            buffered_osc_bytes = flushed.len(),
+            "SSH shell integration timed out; releasing queued terminal input"
+        );
         self.force_normal();
-        let _ = flushed;
         SshIntegrationOutput::default()
     }
 
@@ -144,7 +168,7 @@ impl SshShellIntegrationState {
         self.phase == SshShellIntegrationPhase::Suppressing
             && self
                 .suppress_started_at
-                .is_some_and(|started_at| started_at.elapsed() > Duration::from_secs(30))
+                .is_some_and(|started_at| started_at.elapsed() >= SSH_INTEGRATION_TIMEOUT)
     }
 
     fn force_normal(&mut self) {
@@ -152,6 +176,9 @@ impl SshShellIntegrationState {
         self.suppress_started_at = None;
         self.pending_script = None;
         self.suppressed_visible_bytes = 0;
+        self.suppressed_rx_bytes = 0;
+        self.suppressed_rx_chunks = 0;
+        self.last_diagnostic_at = None;
     }
 
     pub(super) fn filter_output(&mut self, bytes: &[u8]) -> SshIntegrationOutput {
@@ -162,6 +189,8 @@ impl SshShellIntegrationState {
                 if self.timeout_expired() {
                     return self.force_normal_after_timeout();
                 }
+                self.suppressed_rx_bytes = self.suppressed_rx_bytes.saturating_add(bytes.len());
+                self.suppressed_rx_chunks = self.suppressed_rx_chunks.saturating_add(1);
                 let result = self.stripper.push(bytes);
                 let cwd_paths = result.cwd_paths;
                 let accepted_commands = result.accepted_commands;
@@ -178,6 +207,20 @@ impl SshShellIntegrationState {
                         .suppressed_visible_bytes
                         .saturating_add(result.visible.len())
                         .min(SUPPRESSED_OUTPUT_LIMIT);
+                    let now = Instant::now();
+                    if self.suppress_started_at.is_some_and(|started| {
+                        now.saturating_duration_since(started) >= SUPPRESSION_DIAGNOSTIC_INITIAL
+                    }) && self.last_diagnostic_at.is_none_or(|last| {
+                        now.saturating_duration_since(last) >= SUPPRESSION_DIAGNOSTIC_INTERVAL
+                    }) {
+                        self.last_diagnostic_at = Some(now);
+                        tracing::info!(
+                            suppressed_rx_bytes = self.suppressed_rx_bytes,
+                            suppressed_rx_chunks = self.suppressed_rx_chunks,
+                            suppressed_visible_bytes = self.suppressed_visible_bytes,
+                            "SSH shell integration still suppressing startup output"
+                        );
+                    }
                     SshIntegrationOutput {
                         visible: Vec::new(),
                         cwd_paths,
@@ -1259,8 +1302,8 @@ mod tests {
     use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 
     use super::{
-        SshShellIntegrationPhase, SshShellIntegrationState, build_legacy_ssh_ready_marker,
-        build_ssh_ready_marker,
+        SSH_INTEGRATION_TIMEOUT, SshShellIntegrationPhase, SshShellIntegrationState,
+        build_legacy_ssh_ready_marker, build_ssh_ready_marker,
     };
 
     fn shell_integration_state(session_id: &str) -> SshShellIntegrationState {
@@ -1365,13 +1408,36 @@ mod tests {
     fn suppressing_timeout_discards_buffered_output_and_enters_normal() {
         let mut state = shell_integration_state("session-1");
         mark_injection_sent(&mut state);
-        state.suppress_started_at = Some(Instant::now() - Duration::from_secs(31));
+        state.suppress_started_at = Some(Instant::now() - Duration::from_secs(9));
 
-        let output = state.filter_output(b"stale prompt# ");
+        let output = state.filter_output(b"\x1b]0;partial title");
 
         assert!(output.visible.is_empty());
         assert!(output.cwd_paths.is_empty());
         assert!(output.accepted_commands.is_empty());
+        assert!(state.is_normal());
+
+        let late_marker = state.filter_output(b"\x1b]7777;NyaTermReady:session-1\x07prompt# ");
+        assert_eq!(late_marker.visible, b"prompt# ");
+    }
+
+    #[test]
+    fn integration_timeout_is_bounded_to_eight_seconds() {
+        assert_eq!(SSH_INTEGRATION_TIMEOUT, Duration::from_secs(8));
+    }
+
+    #[test]
+    fn split_ready_marker_is_consumed_once() {
+        let mut state = shell_integration_state("session-1");
+        mark_injection_sent(&mut state);
+
+        let first = state.filter_output(b"stale prompt\x1b]7777;NyaTermRe");
+        let second = state.filter_output(b"ady:session-1\x07prompt# ");
+        let after = state.filter_output(b"next output");
+
+        assert!(first.visible.is_empty());
+        assert_eq!(second.visible, b"prompt# ");
+        assert_eq!(after.visible, b"next output");
         assert!(state.is_normal());
     }
 

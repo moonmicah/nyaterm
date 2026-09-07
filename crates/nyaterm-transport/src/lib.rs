@@ -28,6 +28,7 @@ mod environment;
 mod file_browser;
 mod gpu;
 mod local_fs;
+mod reconnect_cwd;
 mod recording;
 mod remote_file;
 mod remote_process;
@@ -161,6 +162,7 @@ pub use gpu::{
     parse_gpu_overview_output,
 };
 pub use local_fs::{LocalDirectoryChild, LocalFileService};
+pub use reconnect_cwd::build_ssh_reconnect_cwd_command;
 pub use recording::{
     DEFAULT_HISTORY_SEARCH_LIMIT, DEFAULT_HISTORY_SEARCH_LINES, DEFAULT_MEMORY_LIMIT_BYTES,
     ExistingFileBehavior, MAX_HISTORY_SEARCH_LINES, RecordingContext, RecordingError,
@@ -1935,7 +1937,7 @@ async fn run_open_ssh_shell_session(
 
     let initial_inject_delay = tokio::time::sleep(Duration::from_millis(500));
     tokio::pin!(initial_inject_delay);
-    let inject_timeout = tokio::time::sleep(Duration::from_secs(30));
+    let inject_timeout = tokio::time::sleep(ssh_shell_integration::SSH_INTEGRATION_TIMEOUT);
     tokio::pin!(inject_timeout);
 
     loop {
@@ -1944,7 +1946,10 @@ async fn run_open_ssh_shell_session(
                 shell_integration.inject(&mut channel).await;
                 inject_timeout
                     .as_mut()
-                    .reset(tokio::time::Instant::now() + Duration::from_secs(30));
+                    .reset(
+                        tokio::time::Instant::now()
+                            + ssh_shell_integration::SSH_INTEGRATION_TIMEOUT,
+                    );
                 if shell_integration.is_normal() {
                     while let Some(data) = pending_writes.pop_front() {
                         if let Err(error) = channel.data_bytes(data).await {
@@ -2010,7 +2015,10 @@ async fn run_open_ssh_shell_session(
                             shell_integration.inject(&mut channel).await;
                             inject_timeout
                                 .as_mut()
-                                .reset(tokio::time::Instant::now() + Duration::from_secs(30));
+                                .reset(
+                                    tokio::time::Instant::now()
+                                        + ssh_shell_integration::SSH_INTEGRATION_TIMEOUT,
+                                );
                         }
                         if shell_integration.is_normal() {
                             while let Some(data) = pending_writes.pop_front() {

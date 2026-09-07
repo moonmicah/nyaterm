@@ -519,17 +519,38 @@ NR>2 {
     [ -n "$nic" ] || continue;
     [ "$nic" != "lo" ] || continue;
     case "$nic" in
-      docker*|veth*|br-*|virbr*|flannel*|cali*|tunl*|kube-ipvs0|cni*|zt*|tailscale*|wg*|tap*|vnet*)
+      docker*|veth*|br-*|virbr*|flannel*|cali*|tun*|tap*|vnet*|kube-ipvs0|cni*|zt*|tailscale*|wg*|dummy*|ifb*|sit*|gre*|gretap*|ip6tnl*|vxlan*|geneve*|erspan*)
         continue;
         ;;
     esac;
-    [ -e "/sys/class/net/$nic/device" ] || continue;
+    if [ ! -e "/sys/class/net/$nic/device" ]; then
+      derived=false;
+      [ -d "/sys/class/net/$nic/bridge" ] && derived=true;
+      [ -d "/sys/class/net/$nic/bonding" ] && derived=true;
+      [ -d "/sys/class/net/$nic/team" ] && derived=true;
+      if [ "$derived" = false ]; then
+        for lower in "/sys/class/net/$nic"/lower_*; do
+          if [ -e "$lower" ]; then
+            derived=true;
+            break;
+          fi;
+        done;
+      fi;
+      [ "$derived" = false ] || continue;
+    fi;
 
     state=unknown;
     if [ -r "/sys/class/net/$nic/operstate" ]; then
       IFS= read -r state <"/sys/class/net/$nic/operstate" || state=unknown;
     fi;
-    [ "$state" = "up" ] || continue;
+    [ -n "$state" ] || state=unknown;
+    carrier=0;
+    if [ -r "/sys/class/net/$nic/carrier" ]; then
+      IFS= read -r carrier <"/sys/class/net/$nic/carrier" || carrier=0;
+    fi;
+    if [ "$state" != "up" ] && [ "$carrier" != "1" ]; then
+      continue;
+    fi;
 
     printf "NETDEV\t%s\t%s\t%s\t%s\n" "$nic" "$state" "${rx:-0}" "${tx:-0}";
   done;
@@ -801,8 +822,8 @@ fn parse_u64_field(value: &str, field: &str) -> anyhow::Result<u64> {
 #[cfg(test)]
 mod tests {
     use super::{
-        CpuTicks, CpuUsageSource, RemoteStatsSampler, calculate_delta, parse_stats_output,
-        usage_percent,
+        CpuTicks, CpuUsageSource, RemoteStatsSampler, SYSINFO_SCRIPT, calculate_delta,
+        parse_stats_output, usage_percent,
     };
 
     fn cpu_line(model: &str, cores: u32) -> String {
@@ -836,6 +857,16 @@ mod tests {
             "MEMORY\t1000\t3000\t500\nNETDEV\teth0\tup\t1000\t2000\nDISK\t/dev/sda1\t/\t10000\t4000\t60\n",
         );
         output
+    }
+
+    #[test]
+    fn network_probe_keeps_virtual_primary_nics_and_filters_derived_interfaces() {
+        assert!(!SYSINFO_SCRIPT.contains("[ -e \"/sys/class/net/$nic/device\" ] || continue"));
+        assert!(SYSINFO_SCRIPT.contains("/sys/class/net/$nic/bridge"));
+        assert!(SYSINFO_SCRIPT.contains("/sys/class/net/$nic/bonding"));
+        assert!(SYSINFO_SCRIPT.contains("/sys/class/net/$nic/team"));
+        assert!(SYSINFO_SCRIPT.contains("/sys/class/net/$nic\"/lower_*"));
+        assert!(SYSINFO_SCRIPT.contains("[ \"$carrier\" != \"1\" ]"));
     }
 
     #[test]
