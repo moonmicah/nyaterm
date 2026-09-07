@@ -32,6 +32,23 @@ impl NyaTermApp {
         cx.notify();
     }
 
+    pub(in crate::features) fn open_quick_command_editor_with_command(
+        &mut self,
+        command: String,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.commands
+            .open_quick_editor(QuickCommandEditorState::from_terminal_selection(command));
+        self.forget_text_inputs("quick-command.editor.");
+        self.shell
+            .set_status("quick command editor opened from selection".to_string());
+        if !self.open_quick_command_window(cx) {
+            window.focus(self.commands.quick_editor_focus(), cx);
+        }
+        cx.notify();
+    }
+
     /// "Add command" from a group row. The child window reads the editor state when
     /// it opens, so seeding the draft first is what carries the category across.
     pub(in crate::features) fn open_new_quick_command_editor_in_category(

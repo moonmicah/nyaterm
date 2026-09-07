@@ -322,6 +322,13 @@ impl NyaTermApp {
             .unwrap_or(self.session.session_order_len());
         let custom_name = self.session.custom_name(&old_id).map(str::to_string);
         let custom_color = self.session.tab_color(&old_id);
+        let reconnect_cwd_command = self
+            .settings
+            .summary()
+            .terminal_reconnect_restore_cwd
+            .then(|| self.session.cwd(&old_id))
+            .flatten()
+            .and_then(nyaterm_transport::build_ssh_reconnect_cwd_command);
         let seed_output = self
             .terminal
             .session_output(&old_id)
@@ -387,6 +394,12 @@ impl NyaTermApp {
                         tab_color: custom_color,
                         insert_index: Some(source_index),
                         seed_output: seed,
+                        startup_command: reconnect_cwd_command.map(|command| {
+                            crate::models::StartupCommandRequest {
+                                command,
+                                delay_ms: 0,
+                            }
+                        }),
                         reconnect_session_id: Some(old_id.clone()),
                         ..Default::default()
                     },

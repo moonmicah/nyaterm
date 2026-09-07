@@ -65,6 +65,18 @@ impl NyaTermApp {
                         this.open_terminal_search(window, cx);
                     })),
             );
+            let selected_for_quick_command = selected.clone();
+            items.push(
+                NyaMenuItem::action(t!("terminalCtx.saveAsQuickCommand"))
+                    .icon("icons/save.svg")
+                    .on_click(cx.listener(move |this, _, window, cx| {
+                        this.open_quick_command_editor_with_command(
+                            selected_for_quick_command.clone(),
+                            window,
+                            cx,
+                        );
+                    })),
+            );
 
             let search_items = self.terminal_online_search_menu_items(&selected, cx);
             items.push(
@@ -476,6 +488,7 @@ mod tests {
             [
                 "Copy",
                 "Find...",
+                "Save as Quick Command",
                 "Search Web",
                 "Translate",
                 "",

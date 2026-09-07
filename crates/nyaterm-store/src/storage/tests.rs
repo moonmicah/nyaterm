@@ -101,6 +101,7 @@ fn round_trips_sessions_in_redb_compatible_tables() {
                 agent_forwarding_config: None,
                 legacy_agent_forwarding: None,
                 encoding: String::new(),
+                dynamic_tab_title: false,
             },
             group_id: Some("group-1".to_string()),
             description: Some("Primary".to_string()),
@@ -173,6 +174,7 @@ fn exports_and_imports_native_redb_backup() {
                 working_dir: Some("/tmp".to_string()),
                 ai_execution_profile: AiExecutionProfile::Auto,
                 encoding: String::new(),
+                dynamic_tab_title: false,
             },
             group_id: Some("ops".to_string()),
             description: None,
@@ -259,6 +261,7 @@ fn exports_and_imports_portable_snapshot() {
                     agent_forwarding_config: None,
                     legacy_agent_forwarding: None,
                     encoding: String::new(),
+                    dynamic_tab_title: false,
                 },
                 group_id: Some("group-1".to_string()),
                 description: Some("Primary".to_string()),
@@ -469,6 +472,7 @@ fn encrypted_portable_snapshot_requires_master_password() {
                     working_dir: None,
                     ai_execution_profile: AiExecutionProfile::Auto,
                     encoding: String::new(),
+                    dynamic_tab_title: false,
                 },
                 group_id: None,
                 description: None,
@@ -533,6 +537,7 @@ fn encrypted_portable_snapshot_requires_master_password() {
                     working_dir: None,
                     ai_execution_profile: AiExecutionProfile::Auto,
                     encoding: String::new(),
+                    dynamic_tab_title: false,
                 },
                 group_id: None,
                 description: None,
@@ -611,6 +616,7 @@ fn rejects_invalid_backup_without_replacing_current_database() {
                     working_dir: None,
                     ai_execution_profile: AiExecutionProfile::Auto,
                     encoding: String::new(),
+                    dynamic_tab_title: false,
                 },
                 group_id: None,
                 description: None,
@@ -686,6 +692,7 @@ fn save_and_delete_connection_updates_store() {
             working_dir: None,
             ai_execution_profile: Default::default(),
             encoding: String::new(),
+            dynamic_tab_title: false,
         },
         group_id: None,
         description: None,
@@ -735,6 +742,7 @@ fn save_group_and_connection_persists_both_records() {
             working_dir: None,
             ai_execution_profile: Default::default(),
             encoding: String::new(),
+            dynamic_tab_title: false,
         },
         group_id: Some(group.id.clone()),
         description: None,
@@ -810,6 +818,7 @@ fn deleting_group_removes_descendants_and_grouped_connections() {
                     working_dir: None,
                     ai_execution_profile: Default::default(),
                     encoding: String::new(),
+                    dynamic_tab_title: false,
                 },
                 group_id: Some(group_id),
                 description: None,
@@ -857,6 +866,7 @@ fn load_sessions_decrypts_legacy_connection_password_record() {
             agent_forwarding_config: None,
             legacy_agent_forwarding: None,
             encoding: String::new(),
+            dynamic_tab_title: false,
         },
         group_id: None,
         description: None,
@@ -1749,6 +1759,7 @@ fn app_settings_summary_reads_and_updates_host_key_policy() {
             "ask_save_location": true,
             "duplicate_strategy": "rename",
             "editor_type": "internal",
+            "internal_editor_font_size": 17,
             "default_editor": "code",
             "download_threads": 5,
             "upload_threads": 4,
@@ -1787,6 +1798,7 @@ fn app_settings_summary_reads_and_updates_host_key_policy() {
             "show_timestamp_milliseconds": true,
             "show_multi_line_paste_dialog": false,
             "paste_image_as_path": false,
+            "reconnect_restore_cwd": true,
             "low_latency_mode": true
         },
         "ui": {
@@ -1858,6 +1870,7 @@ fn app_settings_summary_reads_and_updates_host_key_policy() {
     assert!(summary.terminal_show_timestamps);
     assert!(!summary.terminal_show_multi_line_paste_dialog);
     assert!(!summary.terminal_paste_image_as_path);
+    assert!(summary.terminal_reconnect_restore_cwd);
     assert!(summary.terminal_low_latency_mode);
     // Legacy settings omit the new field and must keep zebra stripes enabled.
     assert!(summary.terminal_zebra_stripes_enabled);
@@ -1924,6 +1937,7 @@ fn app_settings_summary_reads_and_updates_host_key_policy() {
     assert!(summary.transfer_ask_save_location);
     assert_eq!(summary.transfer_duplicate_strategy, "rename");
     assert_eq!(summary.transfer_editor_type, "internal");
+    assert_eq!(summary.transfer_internal_editor_font_size, 17);
     assert_eq!(summary.transfer_default_editor, "code");
     assert_eq!(summary.transfer_download_threads, 5);
     assert_eq!(summary.transfer_upload_threads, 4);
@@ -1988,6 +2002,7 @@ fn app_settings_summary_reads_and_updates_host_key_policy() {
 
     let mut terminal_update = summary.clone();
     terminal_update.terminal_show_line_numbers = false;
+    terminal_update.terminal_reconnect_restore_cwd = false;
     store
         .save_terminal_settings(&terminal_update)
         .expect("save terminal settings");
@@ -2000,12 +2015,18 @@ fn app_settings_summary_reads_and_updates_host_key_policy() {
         Some(true),
         "the retired legacy key must remain byte-semantically untouched"
     );
+    assert_eq!(
+        json_path(&stored, &["terminal", "reconnect_restore_cwd"])
+            .and_then(|value| value.as_bool()),
+        Some(false)
+    );
 
     let mut transfer_update = summary.clone();
     transfer_update.transfer_download_path = "/var/tmp/downloads".to_string();
     transfer_update.transfer_ask_save_location = false;
     transfer_update.transfer_duplicate_strategy = "overwrite".to_string();
     transfer_update.transfer_editor_type = "external".to_string();
+    transfer_update.transfer_internal_editor_font_size = 19;
     transfer_update.transfer_default_editor = "gedit".to_string();
     transfer_update.transfer_download_threads = 2;
     transfer_update.transfer_upload_threads = 6;
@@ -2021,6 +2042,7 @@ fn app_settings_summary_reads_and_updates_host_key_policy() {
     assert!(!updated.transfer_ask_save_location);
     assert_eq!(updated.transfer_duplicate_strategy, "overwrite");
     assert_eq!(updated.transfer_editor_type, "external");
+    assert_eq!(updated.transfer_internal_editor_font_size, 19);
     assert_eq!(updated.transfer_default_editor, "gedit");
     assert_eq!(updated.transfer_download_threads, 2);
     assert_eq!(updated.transfer_upload_threads, 6);
@@ -2047,6 +2069,11 @@ fn app_settings_summary_reads_and_updates_host_key_policy() {
     assert_eq!(
         json_path(&stored, &["transfer", "editor_type"]).and_then(|value| value.as_str()),
         Some("external")
+    );
+    assert_eq!(
+        json_path(&stored, &["transfer", "internal_editor_font_size"])
+            .and_then(|value| value.as_u64()),
+        Some(19)
     );
     assert_eq!(
         json_path(&stored, &["transfer", "default_editor"]).and_then(|value| value.as_str()),
@@ -3335,6 +3362,7 @@ fn sync_snapshot_strips_device_local_ssh_agent_settings() {
                 agent_forwarding_config: None,
                 legacy_agent_forwarding: None,
                 encoding: String::new(),
+                dynamic_tab_title: false,
             },
             group_id: None,
             description: None,
@@ -3796,6 +3824,7 @@ fn ssh_connection_for_asset(id: &str) -> SavedConnection {
             agent_forwarding_config: None,
             legacy_agent_forwarding: None,
             encoding: String::new(),
+            dynamic_tab_title: false,
         },
         group_id: None,
         description: None,

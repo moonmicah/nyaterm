@@ -111,6 +111,14 @@ impl NyaTermApp {
         self.save_terminal_settings(cx);
     }
 
+    pub(in crate::features) fn toggle_terminal_reconnect_restore_cwd(
+        &mut self,
+        cx: &mut Context<Self>,
+    ) {
+        self.settings.toggle_terminal_reconnect_restore_cwd();
+        self.save_terminal_settings(cx);
+    }
+
     pub(in crate::features) fn toggle_multi_line_paste_dialog(&mut self, cx: &mut Context<Self>) {
         self.settings.toggle_multi_line_paste_dialog();
         self.save_terminal_settings(cx);

@@ -1210,6 +1210,17 @@ mod tests {
     }
 
     #[test]
+    fn quick_editor_preserves_terminal_selection_exactly() {
+        let selected = "  printf 'a\\nb'  \n".to_string();
+        let editor = QuickCommandEditorState::from_terminal_selection(selected.clone());
+        assert_eq!(editor.command, selected);
+        assert_eq!(
+            editor.focused_field,
+            crate::models::QuickCommandEditorField::Command
+        );
+    }
+
+    #[test]
     fn quick_editor_category_search_and_new_category_drafts_are_separate() {
         let test_dir = TestConfigDir::new("nyaterm-command-state-test");
         let mut state = command_state(test_dir.path());

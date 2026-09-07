@@ -224,6 +224,14 @@ impl QuickCommandEditorState {
         }
     }
 
+    pub(crate) fn from_terminal_selection(command: String) -> Self {
+        Self {
+            focused_field: QuickCommandEditorField::Command,
+            command,
+            ..Self::blank()
+        }
+    }
+
     pub(crate) fn from_command(command: QuickCommand) -> Self {
         Self {
             focused_field: QuickCommandEditorField::Label,

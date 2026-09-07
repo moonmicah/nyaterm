@@ -160,6 +160,11 @@ impl ConnectionStore {
                 &["terminal", "paste_image_as_path"],
                 true,
             ),
+            terminal_reconnect_restore_cwd: json_bool(
+                &value,
+                &["terminal", "reconnect_restore_cwd"],
+                false,
+            ),
             terminal_low_latency_mode: json_bool(&value, &["terminal", "low_latency_mode"], false),
             terminal_zebra_stripes_enabled: json_bool(
                 &value,
@@ -406,6 +411,12 @@ impl ConnectionStore {
                 &["transfer", "editor_type"],
                 "external",
             )),
+            transfer_internal_editor_font_size: json_u16(
+                &value,
+                &["transfer", "internal_editor_font_size"],
+                13,
+            )
+            .clamp(8, 72),
             transfer_default_editor: json_string(&value, &["transfer", "default_editor"], ""),
             transfer_download_threads: json_u32(&value, &["transfer", "download_threads"], 3)
                 .clamp(1, 10),
@@ -650,6 +661,11 @@ impl ConnectionStore {
             &mut value,
             &["transfer", "editor_type"],
             normalize_transfer_editor_type(&settings.transfer_editor_type),
+        );
+        set_nested_json_value(
+            &mut value,
+            &["transfer", "internal_editor_font_size"],
+            serde_json::Value::from(settings.transfer_internal_editor_font_size.clamp(8, 72)),
         );
         set_nested_json_string(
             &mut value,
@@ -1110,6 +1126,11 @@ impl ConnectionStore {
             &mut value,
             &["terminal", "paste_image_as_path"],
             serde_json::Value::Bool(settings.terminal_paste_image_as_path),
+        );
+        set_nested_json_value(
+            &mut value,
+            &["terminal", "reconnect_restore_cwd"],
+            serde_json::Value::Bool(settings.terminal_reconnect_restore_cwd),
         );
         set_nested_json_value(
             &mut value,

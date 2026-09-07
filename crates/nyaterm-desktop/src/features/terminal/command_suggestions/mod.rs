@@ -1,6 +1,6 @@
 use rust_i18n::t;
 
-use nyaterm_ui::NyaScrollable;
+use nyaterm_ui::{NyaScrollable, NyaTooltip};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -1077,6 +1077,11 @@ impl NyaTermApp {
         ) else {
             return div().into_any_element();
         };
+        let selected_preview = state
+            .selected_index
+            .and_then(|index| state.items.get(index))
+            .filter(|item| item.command.chars().count() > 48)
+            .map(|item| item.command.clone());
 
         let mut list = div()
             .id(SharedString::from("command-suggestions-list"))
@@ -1096,6 +1101,8 @@ impl NyaTermApp {
             } else {
                 item.display.clone()
             };
+            let show_full_command = label.chars().count() > 48;
+            let full_command = item.command.clone();
             let is_history = item.source == "history";
             let delete_command = item.command.clone();
             let mut row = div()
@@ -1152,6 +1159,11 @@ impl NyaTermApp {
                             selected,
                         )),
                 );
+            if show_full_command {
+                row = row.tooltip(move |window, cx| {
+                    NyaTooltip::new(full_command.clone()).build(window, cx)
+                });
+            }
             if is_history {
                 row = row.child(
                     div()
@@ -1202,7 +1214,27 @@ impl NyaTermApp {
             .border_color(rgb(palette.border))
             .bg(rgba((palette.surface << 8) | 0xf2))
             .shadow_lg()
-            .overflow_hidden()
+            .when_some(selected_preview, |this, command| {
+                this.child(
+                    div()
+                        .absolute()
+                        .bottom(px(placement.height + 6.))
+                        .left_0()
+                        .w_full()
+                        .max_w(px(560.))
+                        .p_2()
+                        .rounded_sm()
+                        .border_1()
+                        .border_color(rgb(palette.border))
+                        .bg(rgb(palette.surface_elevated))
+                        .shadow_lg()
+                        .font_family(crate::features::shell::gpui_code_font_family())
+                        .text_size(px(11.))
+                        .text_color(rgb(palette.text))
+                        .whitespace_normal()
+                        .child(command),
+                )
+            })
             .child(
                 div()
                     .h(px(SUGGESTION_OVERLAY_HEADER_HEIGHT))

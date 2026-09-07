@@ -526,6 +526,10 @@ impl SettingsFeatureState {
         self.summary.terminal_show_timestamps = !self.summary.terminal_show_timestamps;
     }
 
+    pub(in crate::features) fn toggle_terminal_reconnect_restore_cwd(&mut self) {
+        self.summary.terminal_reconnect_restore_cwd = !self.summary.terminal_reconnect_restore_cwd;
+    }
+
     pub(in crate::features) fn toggle_multi_line_paste_dialog(&mut self) {
         self.summary.terminal_show_multi_line_paste_dialog =
             !self.summary.terminal_show_multi_line_paste_dialog;
@@ -663,6 +667,17 @@ impl SettingsFeatureState {
 
     pub(in crate::features) fn set_transfer_editor_type(&mut self, editor_type: &str) {
         self.summary.transfer_editor_type = editor_type.to_string();
+    }
+
+    pub(in crate::features) fn adjust_transfer_internal_editor_font_size(
+        &mut self,
+        delta: i16,
+    ) -> bool {
+        let current = self.summary.transfer_internal_editor_font_size as i16;
+        let next = current.saturating_add(delta).clamp(8, 72) as u16;
+        let changed = next != self.summary.transfer_internal_editor_font_size;
+        self.summary.transfer_internal_editor_font_size = next;
+        changed
     }
 
     pub(in crate::features) fn toggle_transfer_ask_save_location(&mut self) {
@@ -1741,6 +1756,15 @@ mod tests {
         assert_eq!(summary.transfer_duplicate_strategy, "rename");
         assert_eq!(summary.transfer_editor_type, "internal");
         assert_eq!(summary.transfer_default_file_permissions, "640");
+
+        state.summary.transfer_internal_editor_font_size = 13;
+        assert!(state.adjust_transfer_internal_editor_font_size(1));
+        assert_eq!(state.summary().transfer_internal_editor_font_size, 14);
+        assert!(state.adjust_transfer_internal_editor_font_size(100));
+        assert_eq!(state.summary().transfer_internal_editor_font_size, 72);
+        assert!(!state.adjust_transfer_internal_editor_font_size(1));
+        assert!(state.adjust_transfer_internal_editor_font_size(-100));
+        assert_eq!(state.summary().transfer_internal_editor_font_size, 8);
     }
 
     #[test]

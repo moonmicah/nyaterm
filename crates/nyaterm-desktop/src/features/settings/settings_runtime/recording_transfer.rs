@@ -135,6 +135,20 @@ impl NyaTermApp {
         self.save_transfer_settings("transfer editor preference saved", cx);
     }
 
+    pub(in crate::features) fn adjust_transfer_internal_editor_font_size(
+        &mut self,
+        delta: i16,
+        cx: &mut Context<Self>,
+    ) {
+        if self
+            .settings
+            .adjust_transfer_internal_editor_font_size(delta)
+        {
+            self.save_transfer_settings("internal editor font size saved", cx);
+            cx.notify();
+        }
+    }
+
     pub(in crate::features) fn toggle_transfer_ask_save_location(
         &mut self,
         cx: &mut Context<Self>,

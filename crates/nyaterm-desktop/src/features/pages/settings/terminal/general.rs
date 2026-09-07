@@ -217,6 +217,19 @@ impl SettingsPanel {
                     ))
                     .child(settings_form_row(
                         palette,
+                        t!("settings.reconnectRestoreCwd"),
+                        Some(SharedString::from(t!("settings.reconnectRestoreCwdDesc"))),
+                        settings_switch(
+                            palette,
+                            "terminal-reconnect-restore-cwd",
+                            self.settings.summary().terminal_reconnect_restore_cwd,
+                            cx.listener(|this, _, _, cx| {
+                                this.toggle_terminal_reconnect_restore_cwd(cx);
+                            }),
+                        ),
+                    ))
+                    .child(settings_form_row(
+                        palette,
                         t!("settings.showNotesPanel"),
                         Some(SharedString::from(t!("settings.showNotesPanelDesc"))),
                         settings_switch(

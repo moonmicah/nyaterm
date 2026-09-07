@@ -153,6 +153,8 @@ pub struct AppSettingsSummary {
     pub terminal_show_multi_line_paste_dialog: bool,
     pub terminal_paste_image_as_path: bool,
     #[serde(default)]
+    pub terminal_reconnect_restore_cwd: bool,
+    #[serde(default)]
     pub terminal_low_latency_mode: bool,
     #[serde(default = "default_terminal_zebra_stripes_enabled")]
     pub terminal_zebra_stripes_enabled: bool,
@@ -288,6 +290,8 @@ pub struct AppSettingsSummary {
     pub transfer_ask_save_location: bool,
     pub transfer_duplicate_strategy: String,
     pub transfer_editor_type: String,
+    #[serde(default = "default_internal_editor_font_size")]
+    pub transfer_internal_editor_font_size: u16,
     pub transfer_default_editor: String,
     pub transfer_download_threads: u32,
     pub transfer_upload_threads: u32,
@@ -408,6 +412,7 @@ impl Default for AppSettingsSummary {
             terminal_show_timestamps: false,
             terminal_show_multi_line_paste_dialog: true,
             terminal_paste_image_as_path: true,
+            terminal_reconnect_restore_cwd: false,
             terminal_low_latency_mode: false,
             terminal_zebra_stripes_enabled: default_terminal_zebra_stripes_enabled(),
             terminal_action_links_enabled: false,
@@ -478,6 +483,7 @@ impl Default for AppSettingsSummary {
             transfer_ask_save_location: false,
             transfer_duplicate_strategy: "ask".to_string(),
             transfer_editor_type: "external".to_string(),
+            transfer_internal_editor_font_size: default_internal_editor_font_size(),
             transfer_default_editor: String::new(),
             transfer_download_threads: 3,
             transfer_upload_threads: 3,
@@ -597,6 +603,10 @@ pub fn normalize_panel_open_mode(raw: &str) -> String {
 
 fn default_terminal_keep_alive_mode() -> String {
     "compatible".to_string()
+}
+
+fn default_internal_editor_font_size() -> u16 {
+    13
 }
 
 fn default_terminal_timestamp_format() -> String {
@@ -778,6 +788,8 @@ mod tests {
         assert_eq!(summary.ui_start_workspace_mode, "workbench");
         assert!(summary.ui_asset_sort_key.is_none());
         assert!(summary.ui_asset_sort_direction.is_none());
+        assert!(!summary.terminal_reconnect_restore_cwd);
+        assert_eq!(summary.transfer_internal_editor_font_size, 13);
     }
 
     #[test]

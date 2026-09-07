@@ -1994,6 +1994,7 @@ forward_app_action!(
     toggle_terminal_hardware_acceleration,
     toggle_terminal_line_numbers,
     toggle_terminal_low_latency_mode,
+    toggle_terminal_reconnect_restore_cwd,
     toggle_terminal_timestamps,
     toggle_terminal_workspace_padding,
     toggle_terminal_zebra_stripes,

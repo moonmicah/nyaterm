@@ -5,9 +5,9 @@ use gpui::{
     App, Bounds, ClipboardItem, Context, CursorStyle, Element, ElementId, ElementInputHandler,
     Entity, EntityInputHandler, FocusHandle, Focusable, GlobalElementId, HighlightStyle,
     InspectorElementId, IntoElement, KeyDownEvent, LayoutId, MouseButton, MouseDownEvent,
-    MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, Render, ScrollHandle, ShapedLine,
-    SharedString, StyledText, TextLayout, TextRun, UTF16Selection, UnderlineStyle, Window, div,
-    fill, point, prelude::*, px, relative, rgb, rgba, size,
+    MouseMoveEvent, MouseUpEvent, PaintQuad, Pixels, Point, Render, ScrollDelta, ScrollHandle,
+    ScrollWheelEvent, ShapedLine, SharedString, StyledText, TextLayout, TextRun, UTF16Selection,
+    UnderlineStyle, Window, div, fill, point, prelude::*, px, relative, rgb, rgba, size,
 };
 
 use crate::features::{NyaTermApp, shell::gpui_code_font_family};
@@ -866,7 +866,15 @@ impl Focusable for RemoteTextEditor {
 
 impl Render for RemoteTextEditor {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let palette = self.app.read(cx).theme_palette();
+        let (palette, font_size) = self.app.read_with(cx, |app, _| {
+            (
+                app.theme_palette(),
+                app.settings
+                    .summary()
+                    .transfer_internal_editor_font_size
+                    .clamp(8, 72) as f32,
+            )
+        });
         let selection = self.selected_range();
         let display_text = if self.content.is_empty() {
             SharedString::from(" ")
@@ -940,12 +948,29 @@ impl Render for RemoteTextEditor {
             .cursor(CursorStyle::IBeam)
             .bg(rgb(palette.input))
             .font_family(gpui_code_font_family())
-            .text_size(px(13.))
-            .line_height(px(20.))
+            .text_size(px(font_size))
+            .line_height(px((font_size + 7.).max(14.)))
             .whitespace_normal()
             .overflow_y_scroll()
             .overflow_x_hidden()
             .track_scroll(&self.scroll)
+            .on_scroll_wheel(cx.listener(|this, event: &ScrollWheelEvent, _, cx| {
+                if !event.modifiers.control && !event.modifiers.platform {
+                    return;
+                }
+                let delta_y = match event.delta {
+                    ScrollDelta::Pixels(delta) => f32::from(delta.y),
+                    ScrollDelta::Lines(delta) => delta.y,
+                };
+                if delta_y == 0.0 {
+                    return;
+                }
+                let step = if delta_y < 0.0 { 1 } else { -1 };
+                this.app.update(cx, |app, cx| {
+                    app.adjust_transfer_internal_editor_font_size(step, cx);
+                });
+                cx.stop_propagation();
+            }))
             .on_key_down(cx.listener(Self::on_key_down))
             .on_click(cx.listener(|_, _, _, cx| cx.stop_propagation()))
             .on_mouse_down(MouseButton::Left, cx.listener(Self::on_mouse_down))
