@@ -1039,6 +1039,7 @@ mod tests {
                 working_dir: None,
                 ai_execution_profile: nyaterm_core::AiExecutionProfile::Auto,
                 encoding: String::new(),
+                dynamic_tab_title: false,
             },
             group_id: group_id.map(ToOwned::to_owned),
             description: None,

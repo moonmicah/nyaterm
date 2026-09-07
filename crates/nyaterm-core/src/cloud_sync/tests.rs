@@ -1775,6 +1775,7 @@ fn local_connection(id: &str, name: &str, shell: &str) -> SavedConnection {
             working_dir: None,
             ai_execution_profile: AiExecutionProfile::Auto,
             encoding: String::new(),
+            dynamic_tab_title: false,
         },
         group_id: None,
         description: None,

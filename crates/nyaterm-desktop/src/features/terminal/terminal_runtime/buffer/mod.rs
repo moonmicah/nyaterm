@@ -4,6 +4,7 @@ use std::fmt::Write as _;
 use std::time::{Duration, Instant};
 
 use gpui::{ClipboardItem, Context};
+use nyaterm_core::terminal::dynamic_title::sanitize_dynamic_title;
 use nyaterm_terminal::{TerminalClipboardLoad, TerminalEffects, TerminalSnapshot};
 
 use crate::features::NyaTermApp;
@@ -1301,12 +1302,8 @@ impl NyaTermApp {
             pending_pty_writes = effects.pty_write;
             clipboard_store = effects.clipboard_store;
             clipboard_loads = effects.clipboard_loads;
-            if let Some(title) = effects.title {
-                self.session.set_dynamic_title(session_id, Some(title));
-            }
-            if effects.reset_title {
-                self.session.set_dynamic_title(session_id, None);
-            }
+            let title = effects.title;
+            let reset_title = effects.reset_title;
             let command_running = view.screen.command_running();
             shell_started |= effects.shell_command_started;
             shell_finished |= effects.shell_command_finished;
@@ -1314,6 +1311,7 @@ impl NyaTermApp {
             if let Some(cwd) = effects.cwd {
                 pending_cwd = Some(cwd);
             }
+            self.apply_terminal_title_effect(session_id, title, reset_title);
         } else {
             self.terminal
                 .view
@@ -1376,12 +1374,7 @@ impl NyaTermApp {
         let mut pending_pty_writes = effects.pty_write;
         let mut clipboard_store = effects.clipboard_store;
         let mut clipboard_loads = effects.clipboard_loads;
-        if let Some(title) = effects.title {
-            self.session.set_dynamic_title(session_id, Some(title));
-        }
-        if effects.reset_title {
-            self.session.set_dynamic_title(session_id, None);
-        }
+        self.apply_terminal_title_effect(session_id, effects.title, effects.reset_title);
         self.handle_terminal_clipboard_effects(
             &mut clipboard_store,
             &mut clipboard_loads,
@@ -1399,6 +1392,34 @@ impl NyaTermApp {
         }
         if let Some(cwd) = effects.cwd {
             self.apply_session_cwd(session_id, cwd);
+        }
+    }
+
+    fn apply_terminal_title_effect(
+        &mut self,
+        session_id: &str,
+        title: Option<String>,
+        reset_title: bool,
+    ) {
+        let enabled = self
+            .session
+            .metadata(session_id)
+            .and_then(|metadata| metadata.source_connection_id.as_deref())
+            .and_then(|connection_id| self.connection_state.connection_by_id(connection_id))
+            .is_some_and(|connection| connection.config.dynamic_tab_title_enabled());
+
+        if !enabled {
+            if title.is_some() || reset_title {
+                self.session.set_dynamic_title(session_id, None);
+            }
+            return;
+        }
+
+        if let Some(title) = title {
+            self.session
+                .set_dynamic_title(session_id, sanitize_dynamic_title(&title));
+        } else if reset_title {
+            self.session.set_dynamic_title(session_id, None);
         }
     }
 

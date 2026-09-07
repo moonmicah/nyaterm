@@ -34,6 +34,7 @@ fn connection(id: &str, name: &str, host: &str, group_id: Option<&str>) -> Saved
             agent_forwarding_config: None,
             legacy_agent_forwarding: None,
             encoding: String::new(),
+            dynamic_tab_title: false,
         },
         group_id: group_id.map(ToOwned::to_owned),
         description: None,

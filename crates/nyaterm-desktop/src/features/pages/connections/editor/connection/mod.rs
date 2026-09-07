@@ -2451,6 +2451,7 @@ mod tests {
             proxy_id: None,
             proxy_jump_id: None,
             x11_forwarding: false,
+            dynamic_tab_title: false,
             agent_endpoint: Default::default(),
             agent_forwarding_config: Default::default(),
             agent_allow_all_confirmed: false,

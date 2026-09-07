@@ -623,6 +623,7 @@
     "workingDirectorySelected": "작업 디렉터리: %{path}",
     "workingDirectorySelectionCancelled": "작업 디렉터리 선택이 취소되었습니다.",
     "x11Forwarding": "X11 포워딩",
+    "dynamicTabTitle": "동적 탭 제목",
     "x11ForwardingDesc": "SSH를 통해 원격 그래픽 애플리케이션을 로컬 X 서버에 표시할 수 있도록 허용합니다."
   },
   "dockerManager": {
@@ -2004,6 +2005,8 @@
     "interactionEncoding": "인코딩",
     "interactionEncodingDesc": "터미널 스트림의 기본 문자 인코딩을 구성합니다.",
     "keepAliveInterval": "Keep-Alive 간격(초)",
+    "reconnectRestoreCwd": "재연결 후 작업 디렉터리 복원",
+    "reconnectRestoreCwdDesc": "SSH 세션을 마지막으로 신뢰된 작업 디렉터리로 되돌립니다.",
     "keepAliveIntervalDesc": "X초마다 SSH keep-alive 패킷을 전송합니다. 0으로 설정해도 Keep-Alive가 비활성화됩니다.",
     "keepAliveMode": "SSH Keep-Alive 모드",
     "keepAliveModeCompatible": "호환 모드(권장)",
@@ -2696,6 +2699,7 @@
     "clearAll": "모두 지우기",
     "clearScreen": "지우기",
     "copy": "복사",
+    "saveAsQuickCommand": "빠른 명령으로 저장",
     "find": "찾기...",
     "findError": "오류",
     "findFound": "찾음",

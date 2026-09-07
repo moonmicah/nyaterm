@@ -1309,6 +1309,17 @@ pub(super) fn connection_editor_ssh_section(
                             ))
                         },
                     )
+                    .child(toggle_chip(
+                        palette,
+                        t!("dialog.dynamicTabTitle"),
+                        editor.dynamic_tab_title,
+                        cx.listener(|this, _, _, cx| {
+                            this.toggle_connection_editor_flag(
+                                ConnectionEditorToggle::DynamicTabTitle,
+                                cx,
+                            );
+                        }),
+                    ))
                     .child({
                         let supported = nyaterm_transport::supported_ssh_algorithms();
                         let algorithm_tabs = NyaTabs::new("connection-ssh-algorithm-tabs")

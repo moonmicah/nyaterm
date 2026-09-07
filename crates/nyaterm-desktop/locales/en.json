@@ -670,6 +670,7 @@
     "workingDirectorySelected": "Working directory: %{path}",
     "workingDirectorySelectionCancelled": "Working directory selection cancelled.",
     "x11Forwarding": "X11 Forwarding",
+    "dynamicTabTitle": "Dynamic tab title",
     "x11ForwardingDesc": "Allow remote graphical applications to display on your local X server through SSH."
   },
   "dockerManager": {
@@ -2051,6 +2052,8 @@
     "interactionEncoding": "Encoding",
     "interactionEncodingDesc": "Configure the default character encoding for terminal streams.",
     "keepAliveInterval": "Keep-Alive Interval (seconds)",
+    "reconnectRestoreCwd": "Restore directory after reconnect",
+    "reconnectRestoreCwdDesc": "Return SSH sessions to the last trusted working directory.",
     "keepAliveIntervalDesc": "Send SSH keep-alive packets every X seconds. 0 to disable.",
     "keepAliveMode": "Keep-alive mode",
     "keepAliveModeCompatible": "Compatible",
@@ -2743,6 +2746,7 @@
     "clearAll": "Clear All",
     "clearScreen": "Clear",
     "copy": "Copy",
+    "saveAsQuickCommand": "Save as Quick Command",
     "find": "Find...",
     "findError": "Error",
     "findFound": "Found",

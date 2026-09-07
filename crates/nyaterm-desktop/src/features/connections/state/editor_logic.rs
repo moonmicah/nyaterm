@@ -656,6 +656,9 @@ pub(super) fn toggle_connection_editor_flag(
         ConnectionEditorToggle::AutoFillOtp => {
             editor.auto_fill_otp = editor.otp_id.is_some() && !editor.auto_fill_otp;
         }
+        ConnectionEditorToggle::DynamicTabTitle => {
+            editor.dynamic_tab_title = !editor.dynamic_tab_title;
+        }
         ConnectionEditorToggle::X11 => editor.x11_forwarding = !editor.x11_forwarding,
         ConnectionEditorToggle::AgentForwarding => {
             editor.agent_forwarding_config.enabled = !editor.agent_forwarding_config.enabled;

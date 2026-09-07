@@ -12,6 +12,10 @@ use super::{
     is_default_telnet_auto_login_config,
 };
 
+fn is_false(value: &bool) -> bool {
+    !*value
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum AiExecutionProfile {
@@ -471,6 +475,8 @@ pub enum ConnectionType {
         legacy_agent_forwarding: Option<bool>,
         #[serde(default)]
         encoding: String,
+        #[serde(default, skip_serializing_if = "is_false")]
+        dynamic_tab_title: bool,
     },
     LocalTerminal {
         #[serde(default)]
@@ -483,6 +489,8 @@ pub enum ConnectionType {
         ai_execution_profile: AiExecutionProfile,
         #[serde(default)]
         encoding: String,
+        #[serde(default, skip_serializing_if = "is_false")]
+        dynamic_tab_title: bool,
     },
     Telnet {
         host: String,
@@ -713,6 +721,20 @@ pub enum AssetDeviceType {
     Storage,
     Embedded,
     Other,
+}
+
+impl ConnectionType {
+    pub fn dynamic_tab_title_enabled(&self) -> bool {
+        match self {
+            Self::Ssh {
+                dynamic_tab_title, ..
+            }
+            | Self::LocalTerminal {
+                dynamic_tab_title, ..
+            } => *dynamic_tab_title,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]

@@ -4,6 +4,7 @@
 //! compatibility modules with their historical names and re-exports the same
 //! public symbols for existing consumers.
 
+pub mod dynamic_title;
 pub mod file_drop;
 pub mod input_fanout;
 pub mod input_tracker;

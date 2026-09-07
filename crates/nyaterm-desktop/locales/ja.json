@@ -624,6 +624,7 @@
     "workingDirectorySelected": "作業ディレクトリ: %{path}",
     "workingDirectorySelectionCancelled": "作業ディレクトリの選択をキャンセルしました。",
     "x11Forwarding": "X11 転送",
+    "dynamicTabTitle": "動的タブタイトル",
     "x11ForwardingDesc": "SSH 経由でリモートのグラフィカルアプリケーションをローカルの X サーバーに表示できるようにします。"
   },
 
@@ -2010,6 +2011,8 @@
     "interactionEncoding": "エンコーディング",
     "interactionEncodingDesc": "ターミナルストリームの既定文字エンコーディングを設定します。",
     "keepAliveInterval": "キープアライブ間隔（秒）",
+    "reconnectRestoreCwd": "再接続後に作業ディレクトリを復元",
+    "reconnectRestoreCwdDesc": "SSH セッションを最後に信頼された作業ディレクトリへ戻します。",
     "keepAliveIntervalDesc": "X 秒ごとに SSH キープアライブパケットを送信します。0 で無効。",
     "keepAliveMode": "キープアライブモード",
     "keepAliveModeCompatible": "互換",
@@ -2705,6 +2708,7 @@
     "clearAll": "すべて消去",
     "clearScreen": "クリア",
     "copy": "コピー",
+    "saveAsQuickCommand": "クイックコマンドとして保存",
     "find": "検索...",
     "findError": "エラー",
     "findFound": "見つかりました",

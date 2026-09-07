@@ -623,6 +623,7 @@
     "workingDirectorySelected": "工作目錄：%{path}",
     "workingDirectorySelectionCancelled": "已取消選擇工作目錄。",
     "x11Forwarding": "X11 轉發",
+    "dynamicTabTitle": "動態分頁標題",
     "x11ForwardingDesc": "允許遠端圖形程式透過 SSH 顯示到本機 X server。"
   },
   "dockerManager": {
@@ -2004,6 +2005,8 @@
     "interactionEncoding": "編碼",
     "interactionEncodingDesc": "設定終端資料流的預設字元編碼。",
     "keepAliveInterval": "Keep-Alive 間隔 (秒)",
+    "reconnectRestoreCwd": "重新連線後還原工作目錄",
+    "reconnectRestoreCwdDesc": "將 SSH 工作階段還原到最後可信的工作目錄。",
     "keepAliveIntervalDesc": "每隔 X 秒傳送 SSH keep-alive 資料包。設定為 0 也會停用 Keep-Alive。",
     "keepAliveMode": "SSH Keep-Alive 模式",
     "keepAliveModeCompatible": "相容模式（建議）",
@@ -2696,6 +2699,7 @@
     "clearAll": "全部清除",
     "clearScreen": "清屏",
     "copy": "複製",
+    "saveAsQuickCommand": "儲存為快速命令",
     "find": "查詢...",
     "findError": "錯誤",
     "findFound": "已找到",

@@ -265,6 +265,7 @@ impl NyaTermApp {
                 working_dir,
                 ai_execution_profile,
                 encoding,
+                ..
             } => {
                 let encoding = resolve_effective_connection_encoding(&encoding, self);
                 let mut config = LocalSessionConfig {
@@ -1349,6 +1350,7 @@ mod tests {
                 agent_forwarding_config: None,
                 legacy_agent_forwarding: None,
                 encoding: String::new(),
+                dynamic_tab_title: false,
             },
             group_id: None,
             description: None,
@@ -1397,6 +1399,7 @@ mod tests {
                 agent_forwarding_config: None,
                 legacy_agent_forwarding: None,
                 encoding: String::new(),
+                dynamic_tab_title: false,
             },
             group_id: None,
             description: None,

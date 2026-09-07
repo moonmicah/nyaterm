@@ -103,6 +103,7 @@ pub(super) fn connection_editor_from_saved(
         proxy_id: network.proxy_id,
         proxy_jump_id: network.proxy_jump_id,
         x11_forwarding: false,
+        dynamic_tab_title: false,
         agent_endpoint: Default::default(),
         agent_forwarding_config: SshAgentForwardingConfig::default(),
         agent_allow_all_confirmed: false,
@@ -178,6 +179,7 @@ pub(super) fn connection_editor_from_saved(
             username,
             backspace_mode,
             x11_forwarding,
+            dynamic_tab_title,
             auth_agent_endpoint,
             agent_forwarding_config,
             encoding,
@@ -188,6 +190,7 @@ pub(super) fn connection_editor_from_saved(
             editor.username = username;
             editor.backspace_mode = backspace_mode;
             editor.x11_forwarding = x11_forwarding;
+            editor.dynamic_tab_title = dynamic_tab_title;
             // Preserve foreign-platform endpoints so editing unrelated fields
             // on another device does not erase the original Agent settings.
             editor.agent_endpoint = auth_agent_endpoint.unwrap_or_default();
@@ -377,6 +380,7 @@ pub(super) fn build_saved_connection_from_editor(
                 .then(|| editor.agent_forwarding_config.clone()),
                 legacy_agent_forwarding: None,
                 encoding: editor_encoding_to_saved(&editor.encoding),
+                dynamic_tab_title: editor.dynamic_tab_title,
             }
         }
         ConnectionKindTab::Local => {
@@ -390,6 +394,7 @@ pub(super) fn build_saved_connection_from_editor(
                 working_dir: non_empty_optional(&editor.working_dir),
                 ai_execution_profile: AiExecutionProfile::Posix,
                 encoding: editor_encoding_to_saved(&editor.encoding),
+                dynamic_tab_title: editor.dynamic_tab_title,
             }
         }
         ConnectionKindTab::Telnet => {
@@ -808,6 +813,7 @@ mod tests {
                 working_dir: None,
                 ai_execution_profile: AiExecutionProfile::Posix,
                 encoding: String::new(),
+                dynamic_tab_title: false,
             },
             group_id: None,
             description: None,
@@ -850,6 +856,7 @@ mod tests {
                 agent_forwarding_config: None,
                 legacy_agent_forwarding: None,
                 encoding: String::new(),
+                dynamic_tab_title: false,
             },
             group_id: None,
             description: None,
@@ -917,6 +924,7 @@ mod tests {
                 }),
                 legacy_agent_forwarding: None,
                 encoding: String::new(),
+                dynamic_tab_title: false,
             },
             group_id: None,
             description: None,
@@ -971,6 +979,7 @@ mod tests {
                 agent_forwarding_config: None,
                 legacy_agent_forwarding: None,
                 encoding: String::new(),
+                dynamic_tab_title: false,
             },
             group_id: None,
             description: None,
@@ -1023,6 +1032,7 @@ mod tests {
                 agent_forwarding_config: None,
                 legacy_agent_forwarding: None,
                 encoding: "GBK".to_string(),
+                dynamic_tab_title: false,
             },
             group_id: None,
             description: None,
@@ -1496,6 +1506,7 @@ impl NyaTermApp {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::features) enum ConnectionEditorToggle {
     AutoFillOtp,
+    DynamicTabTitle,
     X11,
     AgentForwarding,
     AgentExternal,

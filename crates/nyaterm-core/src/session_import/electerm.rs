@@ -181,6 +181,7 @@ fn prepare_electerm_bookmark(
             agent_forwarding_config: None,
             legacy_agent_forwarding: None,
             encoding: String::new(),
+            dynamic_tab_title: false,
         },
         group_path,
         description: None,

@@ -6,12 +6,12 @@ use gpui::{
     px, rgb, svg,
 };
 
-use crate::features::NyaTermApp;
+use crate::features::{NyaTermApp, connections::ConnectionEditorToggle};
 use crate::models::{ConnectionEditorField, ConnectionEditorSelect};
 use crate::widgets::small_button;
 
 use super::super::super::list::{
-    ConnectionEditorRenderContext, connection_editor_select, editor_field,
+    ConnectionEditorRenderContext, connection_editor_select, editor_field, toggle_chip,
 };
 
 use super::ConnectionEditorSectionContext;
@@ -22,7 +22,7 @@ pub(super) fn connection_editor_local_section(
 ) -> gpui::Div {
     let ConnectionEditorSectionContext {
         palette,
-        editor: _,
+        editor,
         fields,
     } = section;
     div()
@@ -130,5 +130,13 @@ pub(super) fn connection_editor_local_section(
             "connection-editor-local-encoding",
             t!("connection.encoding"),
             ConnectionEditorSelect::Encoding,
+        ))
+        .child(toggle_chip(
+            palette,
+            t!("dialog.dynamicTabTitle"),
+            editor.dynamic_tab_title,
+            cx.listener(|this, _, _, cx| {
+                this.toggle_connection_editor_flag(ConnectionEditorToggle::DynamicTabTitle, cx);
+            }),
         ))
 }

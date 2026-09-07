@@ -143,6 +143,7 @@ mod tests {
             agent_forwarding_config: None,
             legacy_agent_forwarding: None,
             encoding: String::new(),
+            dynamic_tab_title: false,
         }
     }
 

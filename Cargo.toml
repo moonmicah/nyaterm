@@ -115,6 +115,8 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 # = false) so asset tests cannot pass under capabilities the app does not build.
 usvg = { version = "0.45", default-features = false }
 url = "=2.5.8"
+unicode-normalization = "0.1"
+unicode-segmentation = "1.12"
 uuid = { version = "1", features = ["v4", "serde"] }
 vnc = { package = "vnc-rs", git = "https://github.com/nyakang/vnc-rs", rev = "d855f22e301835cdf63a7aa1520877e3153ec66a" }
 vte = "0.14"

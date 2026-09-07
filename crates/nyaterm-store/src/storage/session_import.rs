@@ -316,6 +316,7 @@ mod tests {
                     working_dir: None,
                     ai_execution_profile: AiExecutionProfile::Auto,
                     encoding: String::new(),
+                    dynamic_tab_title: false,
                 },
                 group_path: Some(vec!["Imported".to_string()]),
                 description: None,

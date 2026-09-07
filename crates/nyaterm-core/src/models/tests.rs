@@ -425,6 +425,7 @@ fn local_terminal_endpoint_uses_shell_and_working_dir() {
             working_dir: Some("/data".to_string()),
             ai_execution_profile: AiExecutionProfile::Auto,
             encoding: String::new(),
+            dynamic_tab_title: false,
         },
         group_id: None,
         description: None,
@@ -538,6 +539,27 @@ fn legacy_ssh_profile_defaults_without_rewriting_sparse_json() {
     assert!(!serialized.contains("terminal_type"), "{serialized}");
     assert!(!serialized.contains("agent_endpoint"), "{serialized}");
     assert!(!serialized.contains("agent_forwarding"), "{serialized}");
+    assert!(!connection.config.dynamic_tab_title_enabled());
+    assert!(!serialized.contains("dynamic_tab_title"), "{serialized}");
+}
+
+#[test]
+fn dynamic_tab_title_round_trips_for_ssh_and_local_connections() {
+    for json in [
+        r#"{"id":"ssh-title","name":"SSH","type":"ssh","host":"example.com","dynamic_tab_title":true}"#,
+        r#"{"id":"local-title","name":"Local","type":"local_terminal","dynamic_tab_title":true}"#,
+    ] {
+        let connection: SavedConnection = serde_json::from_str(json).expect("connection loads");
+        assert!(connection.config.dynamic_tab_title_enabled());
+        let serialized = serde_json::to_string(&connection).expect("connection serializes");
+        assert!(
+            serialized.contains(r#""dynamic_tab_title":true"#),
+            "{serialized}"
+        );
+        let reloaded: SavedConnection =
+            serde_json::from_str(&serialized).expect("connection reloads");
+        assert!(reloaded.config.dynamic_tab_title_enabled());
+    }
 }
 
 #[test]

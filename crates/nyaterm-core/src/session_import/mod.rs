@@ -192,6 +192,7 @@ fn prepare_legacy_sessions(imported: Vec<ImportedSession>) -> PreparedSessionImp
                 agent_forwarding_config: None,
                 legacy_agent_forwarding: None,
                 encoding: String::new(),
+                dynamic_tab_title: false,
             },
             group_path: session.group_path,
             description: session.description,

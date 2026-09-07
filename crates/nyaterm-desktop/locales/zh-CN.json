@@ -670,6 +670,7 @@
     "workingDirectorySelected": "工作目录：%{path}",
     "workingDirectorySelectionCancelled": "已取消选择工作目录。",
     "x11Forwarding": "X11 转发",
+    "dynamicTabTitle": "动态标签标题",
     "x11ForwardingDesc": "允许远端图形程序通过 SSH 显示到本机 X server。"
   },
   "dockerManager": {
@@ -2051,6 +2052,8 @@
     "interactionEncoding": "编码",
     "interactionEncodingDesc": "配置终端数据流的默认字符编码。",
     "keepAliveInterval": "Keep-Alive 间隔 (秒)",
+    "reconnectRestoreCwd": "重连后恢复工作目录",
+    "reconnectRestoreCwdDesc": "将 SSH 会话恢复到最后可信的工作目录。",
     "keepAliveIntervalDesc": "每隔 X 秒发送 SSH keep-alive 控制包。设置为 0 以禁用。",
     "keepAliveMode": "Keep-alive 模式",
     "keepAliveModeCompatible": "兼容",
@@ -2743,6 +2746,7 @@
     "clearAll": "全部清除",
     "clearScreen": "清屏",
     "copy": "复制",
+    "saveAsQuickCommand": "保存为快捷命令",
     "find": "查找...",
     "findError": "错误",
     "findFound": "已找到",

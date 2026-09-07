@@ -976,6 +976,7 @@ mod tests {
                 working_dir: None,
                 ai_execution_profile: Default::default(),
                 encoding: String::new(),
+                dynamic_tab_title: false,
             },
             group_id: group_id.map(str::to_string),
             description: None,
@@ -1010,6 +1011,7 @@ mod tests {
             agent_forwarding_config: None,
             legacy_agent_forwarding: None,
             encoding: String::new(),
+            dynamic_tab_title: false,
         };
         connection
     }

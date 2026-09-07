@@ -335,6 +335,7 @@ pub(crate) struct ConnectionEditorState {
     pub(crate) proxy_id: Option<String>,
     pub(crate) proxy_jump_id: Option<String>,
     pub(crate) x11_forwarding: bool,
+    pub(crate) dynamic_tab_title: bool,
     pub(crate) agent_endpoint: nyaterm_core::SshAgentEndpoint,
     pub(crate) agent_forwarding_config: nyaterm_core::SshAgentForwardingConfig,
     pub(crate) agent_allow_all_confirmed: bool,
