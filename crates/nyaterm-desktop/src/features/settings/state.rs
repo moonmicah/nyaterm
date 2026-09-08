@@ -476,10 +476,6 @@ impl SettingsFeatureState {
         self.summary.x11_display = text;
     }
 
-    pub(in crate::features) fn toggle_terminal_hardware_acceleration(&mut self) {
-        self.summary.terminal_hardware_acceleration = !self.summary.terminal_hardware_acceleration;
-    }
-
     pub(in crate::features) fn toggle_terminal_low_latency_mode(&mut self) -> bool {
         self.summary.terminal_low_latency_mode = !self.summary.terminal_low_latency_mode;
         self.summary.terminal_low_latency_mode
