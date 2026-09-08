@@ -692,7 +692,7 @@ enum SshCommand {
 }
 
 struct OpenSshShellSession {
-    handle: Option<client::Handle<SshClientHandler>>,
+    handle: SshShellHandle,
     channel: russh::Channel<client::Msg>,
     jump_handles: Vec<client::Handle<SshClientHandler>>,
     disconnect_on_close: bool,
@@ -1943,7 +1943,7 @@ async fn run_open_ssh_shell_session(
     loop {
         tokio::select! {
             _ = &mut initial_inject_delay, if shell_integration.should_inject_on_initial_delay() => {
-                shell_integration.inject(&mut channel).await;
+                shell_integration.inject(&handle, &mut channel).await;
                 inject_timeout
                     .as_mut()
                     .reset(
@@ -2012,7 +2012,7 @@ async fn run_open_ssh_shell_session(
                         let output = shell_integration.filter_output(&data);
                         push_ssh_integration_output(&event_queue, &session_id, output);
                         if was_waiting_initial && shell_integration.is_waiting_initial() {
-                            shell_integration.inject(&mut channel).await;
+                            shell_integration.inject(&handle, &mut channel).await;
                             inject_timeout
                                 .as_mut()
                                 .reset(
@@ -2316,10 +2316,6 @@ async fn open_ssh_shell_from_pending(
         integration_enabled = injection_script.is_some(),
         "resolved SSH shell integration"
     );
-    let handle = match handle {
-        SshShellHandle::Dedicated(handle) => Some(handle),
-        SshShellHandle::Multiplexed(_) => None,
-    };
     Ok(OpenSshShellSession {
         handle,
         channel,
@@ -2352,7 +2348,7 @@ async fn disconnect_pending_ssh_shell(session: PendingOpenSshShellSession) {
 
 async fn disconnect_open_ssh_shell(
     session_id: &str,
-    handle: Option<client::Handle<SshClientHandler>>,
+    handle: SshShellHandle,
     jump_handles: Vec<client::Handle<SshClientHandler>>,
     disconnect_on_close: bool,
     x11_multiplex_registration: Option<SshMultiplexHandle>,
@@ -2361,7 +2357,7 @@ async fn disconnect_open_ssh_shell(
         multiplex.unregister_x11_sender(session_id).await;
     }
     if disconnect_on_close {
-        if let Some(handle) = handle {
+        if let SshShellHandle::Dedicated(handle) = handle {
             let _ = handle
                 .disconnect(Disconnect::ByApplication, "session closed", "en")
                 .await;

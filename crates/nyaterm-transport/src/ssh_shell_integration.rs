@@ -130,11 +130,66 @@ impl SshShellIntegrationState {
         self.phase == SshShellIntegrationPhase::WaitInitial && self.pending_script.is_some()
     }
 
-    pub(super) async fn inject(&mut self, channel: &mut russh::Channel<client::Msg>) {
+    pub(super) async fn inject(
+        &mut self,
+        handle: &SshShellHandle,
+        channel: &mut russh::Channel<client::Msg>,
+    ) {
         let Some(script) = self.pending_script.take() else {
             return;
         };
-        if channel.data_bytes(script).await.is_ok() {
+        let remote_path = format!(
+            "/tmp/.nyaterm_inj_{}_{}.sh",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_millis())
+                .unwrap_or(0)
+        );
+
+        // 打开 exec 通道（内联，不依赖额外函数）
+        let exec_ch = match handle {
+            SshShellHandle::Dedicated(h) => h.channel_open_session().await,
+            SshShellHandle::Multiplexed(h) => {
+                let h = h.lock().await;
+                h.channel_open_session().await
+            }
+        };
+
+        let write_ok = match exec_ch {
+            Ok(mut exec_ch) => {
+                let cmd = format!("cat > '{path}' && chmod 700 '{path}'", path = remote_path);
+                match exec_ch.exec(true, cmd.into_bytes()).await {
+                    Ok(()) => {
+                        let data_ok = exec_ch.data_bytes(script.clone()).await.is_ok();
+                        let _ = exec_ch.eof().await;
+
+                        let mut exit_status = None;
+                        while let Some(msg) = exec_ch.wait().await {
+                            match msg {
+                                ChannelMsg::ExitStatus { exit_status: s } => exit_status = Some(s),
+                                ChannelMsg::Close | ChannelMsg::Eof => break,
+                                _ => {}
+                            }
+                        }
+                        let _ = exec_ch.close().await;
+                        data_ok && exit_status.unwrap_or(1) == 0
+                    }
+                    Err(_) => false,
+                }
+            }
+            Err(_) => false,
+        };
+
+        if !write_ok {
+            let _ = channel.data_bytes(script).await;
+            self.phase = SshShellIntegrationPhase::Suppressing;
+            self.suppress_started_at = Some(Instant::now());
+            return;
+        }
+
+        let source_cmd = format!(". '{path}'; rm -f '{path}'\n", path = remote_path);
+        if channel.data_bytes(source_cmd.into_bytes()).await.is_ok() {
             self.phase = SshShellIntegrationPhase::Suppressing;
             self.suppress_started_at = Some(Instant::now());
             self.suppressed_visible_bytes = 0;
@@ -142,7 +197,9 @@ impl SshShellIntegrationState {
             self.suppressed_rx_chunks = 0;
             self.last_diagnostic_at = None;
         } else {
-            self.force_normal();
+            self.phase = SshShellIntegrationPhase::Normal;
+            self.suppress_started_at = None;
+            self.suppressed_visible_bytes = 0;
         }
     }
 
