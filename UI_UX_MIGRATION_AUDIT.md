@@ -30,7 +30,7 @@ NyaTerm UI/UX 迁移审计 · 2026-09-08
 | 11 | 粘贴图片为路径 | `features/pages/settings/terminal/general.rs:212` 暴露 `terminal_paste_image_as_path`，但全仓没有粘贴运行时消费者；`features/terminal/terminal_runtime/paste.rs:13` 只提取 `item.text()`。 | 截图剪贴板、文件剪贴板、普通文本分别测试；明确本地路径与远端上传后路径的区别。 |
 | 12 | 下载线程数 | `features/pages/settings/inputs.rs:345` 创建输入；`features/transfers/transfer_options.rs:7` 只传入上传线程数，未读取 `transfer_download_threads`。全仓其他命中为设置/存储/测试。 | 修改后用多文件下载确认并发改变；不能仅检查保存值。 |
 | 13 | 硬件加速 | `features/pages/settings/terminal/general.rs:101` 有开关；`terminal_hardware_acceleration` 没有渲染路径消费者。 | GPUI 若不支持切换，应撤下可交互开关或说明当前渲染方式，保留旧数据兼容。 |
-| 14 | 关键词跨折行匹配 | `features/pages/settings/terminal/keywords.rs:69` 开关控制 `across_wrapped_lines`；全仓只在配置、存储、设置中读取；`nyaterm-terminal-gpui/src/keywords.rs:269` 按折行组匹配，没有该设置参数。 | 窄终端让关键词跨软折行，开关两态分别验收。 |
+| 14 | 关键词跨折行匹配（后续复核：应统一逻辑行匹配，撤下开关） | `features/pages/settings/terminal/keywords.rs:69` 开关控制 `across_wrapped_lines`；全仓只在配置、存储、设置中读取；`nyaterm-terminal-gpui/src/keywords.rs:269` 按折行组匹配，没有该设置参数。 | 窄终端让关键词跨软折行，开关两态分别验收。 |
 | 15 | SSH strict / compatible keepalive | `features/session/session_runtime/start.rs:705` 仅区分 disabled；`nyaterm-transport/src/lib.rs:2397` 只设置 interval / max，未映射 `keepalive_mode`。 | 显式映射模式；测试忽略 keepalive 回复的设备，避免配置标签与协议行为不一致。 |
 | 16 | 最小化到托盘 | `features/pages/settings/workspace/general.rs:127` 可切换；`features/terminal/terminal_runtime/sessions.rs:270` 明确注释为 no-op，两个分支均 `window.minimize_window()`。 | 开启后实际隐藏到托盘并可恢复，或在实现前不提供误导性开关。旧版托盘菜单也未迁移。 |
 
@@ -87,7 +87,7 @@ NyaTerm UI/UX 迁移审计 · 2026-09-08
 | 06、07、17 | 认证 loopback route、RDP/VNC helper 接线、独立 IME 实体、串行启动恢复 | IPC 升至 7；生产代理/跳板、CJK IME 与恢复密码流程未实机验收 |
 | 10、20 | 共享图标库及导入/删除/预览、遗留 data URL；SFTP pipeline；JSON 导入和存储扩展字段保留 | 原审计修正：custom_icons 是根 SessionsConfig 字段；图标列表、编辑器和工作区/标签渲染已接入，其他次要菜单还需视觉核验 |
 | 11、12、21 | 剪贴板图片暂存/上传后插入；下载并发和取消；软链接目标与原子替换 | SFTP 原子替换要求服务器支持 posix-rename；真实大文件/断线/非 SFTP 后端验收待完成 |
-| 13、14、15 | 无效 GPU 开关改说明；跨折行设置进入缓存/匹配；strict/compatible keepalive | russh 正式 fork 增加模式接口，默认兼容设置仍按旧配置读取 |
+| 13、14、15 | 无效 GPU 开关改说明；跨折行设置曾接线，后续按用户要求撤下开关并统一逻辑行匹配；strict/compatible keepalive | russh 正式 fork 增加模式接口，默认兼容设置仍按旧配置读取 |
 | 16 | tray-icon/muda 菜单、连接/同步/锁屏/更新/退出，Windows 原生隐藏与恢复、macOS hide、Linux GTK 事件线程 | Linux 隐藏 API 缺失，暂回退普通最小化并提示；不能宣称三平台最小化到托盘完全对齐 |
 | 19 | 实际发布 CDN manifest、平台包选择、Minisign 校验、进度/取消、安装及重启准备 | 未执行真实安装器升级；debug/portable 禁用自更新，Homebrew/包管理器路径保留手动流程；安装/失败回退仍需三平台实机验收 |
 | 22 | core 文档事务；原生查找替换、正则/大小写/整词、折叠、Ctrl+D/Alt-click 多选区和矩形选择 | 后台语法解析及折叠坐标映射有测试；大型文件性能、复杂 IME、多光标导航细节仍需实机核验 |
@@ -111,3 +111,12 @@ NyaTerm UI/UX 迁移审计 · 2026-09-08
 开发日志位于 `target/ui-ux-*.log`，不提交日志或用户数据。
 
 实机限制：按 computer-use 技能初始化 Windows 自动化时 `@oai/sky` 报 Module not found，插件未提供可加载的模块；没有执行原生窗口点击截图验收。未获取 macOS/Linux 实机。未操作用户真实数据库、未实际连接生产服务器、未发布版本、未实际安装更新。
+
+
+**关键词折行策略复核 · 2026-09-09**
+
+原审计把“不消费跨折行开关”直接归类成缺陷不够准确：需要先判断这个旧开关是否仍适合原生实现。Alacritty 仍使用物理行网格，通过上一行末单元格的 `WRAPLINE` 标记识别软折行；其内置正则搜索也区分软折行和真正换行。NyaTerm 的关键词高亮是独立的快照匹配/颜色映射实现，并不会自动使用 Alacritty 搜索器。
+
+当前决定：保留软折行/硬换行的内部边界识别，但移除用户可见开关及物理行匹配配置分支，正常情况下始终按逻辑行匹配。这样窗口缩窄或重新展开不会改变关键词语义；显式换行仍隔离不同日志记录。超长逻辑行的 512 行 / 256 KiB 性能保护继续保留，不承诺无界跨行匹配。旧 `keyword_highlights_across_wrapped_lines` 字段保留原值读写，不再控制原生高亮。
+
+增加实际 Alacritty 输出快照的软折行/硬换行、窗口宽度重排回归，以及旧字段 true/false 保存兼容测试。
