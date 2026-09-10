@@ -2128,23 +2128,23 @@ async fn run_open_ssh_shell_session(
                         let was_waiting_initial = shell_integration.is_waiting_initial();
                         let output = shell_integration.filter_output(&data);
                         push_ssh_integration_output(&event_queue, &session_id, output);
-                        if was_waiting_initial && shell_integration.is_waiting_initial() {
-                           if let Some(script) = shell_integration.take_pending_script() {
-                                shell_integration.begin_suppression();
-                                inject_timeout
-                                    .as_mut()
-                                    .reset(
-                                        tokio::time::Instant::now()
-                                            + ssh_shell_integration::SSH_INTEGRATION_TIMEOUT,
-                                    );
-                                let task_handle = Arc::clone(&handle);
-                                let task_script = script.clone();
-                                let join = tokio::spawn(ssh_shell_integration::upload_integration_script(
-                                    task_handle,
-                                    task_script,
-                                ));
-                                pending_upload = Some((script, join));
-                            }
+                        if was_waiting_initial
+                            && shell_integration.is_waiting_initial()
+                            && let Some(script) = shell_integration.take_pending_script() {
+                            shell_integration.begin_suppression();
+                            inject_timeout
+                                .as_mut()
+                                .reset(
+                                    tokio::time::Instant::now()
+                                        + ssh_shell_integration::SSH_INTEGRATION_TIMEOUT,
+                                );
+                            let task_handle = Arc::clone(&handle);
+                            let task_script = script.clone();
+                            let join = tokio::spawn(ssh_shell_integration::upload_integration_script(
+                                task_handle,
+                                task_script,
+                            ));
+                            pending_upload = Some((script, join));
                         }
                         if shell_integration.is_normal() {
                             while let Some(data) = pending_writes.pop_front() {

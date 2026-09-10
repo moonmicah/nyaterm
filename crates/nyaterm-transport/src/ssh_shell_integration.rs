@@ -300,7 +300,7 @@ pub(super) async fn upload_integration_script(
                         while let Some(msg) = exec_ch.wait().await {
                             match msg {
                                 ChannelMsg::ExitStatus { exit_status: s } => exit_status = Some(s),
-                                ChannelMsg::Close | ChannelMsg::Eof => break,
+                                ChannelMsg::Close => break,
                                 _ => {}
                             }
                         }

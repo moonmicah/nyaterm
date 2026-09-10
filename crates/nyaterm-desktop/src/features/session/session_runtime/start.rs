@@ -30,7 +30,7 @@ use crate::features::{
     session::AgentPromptBroker, session::CredentialPromptBroker, session::HostKeyPromptBroker,
     session::NativeOtpProvider, session::SavedConnectionStartOptions,
 };
-use crate::models::{SessionLaunchConfig, StartupCommandRequest};
+use crate::models::SessionLaunchConfig;
 
 #[derive(Clone)]
 pub(in crate::features) struct SshSessionConfigBuildContext {
@@ -750,22 +750,11 @@ impl NyaTermApp {
             after_session_id,
             insert_index,
             seed_output,
-            mut startup_command,
+            startup_command,
             reconnect_session_id,
             workspace_split,
             tab_placement,
         } = options;
-        if startup_command.is_none()
-            && let Some(post_login) = connection.post_login.as_ref()
-            && post_login.enabled
-            && !post_login.command.trim().is_empty()
-        {
-            startup_command = Some(StartupCommandRequest {
-                command: post_login.command.clone(),
-                delay_ms: post_login.delay_ms,
-            });
-        }
-
         let connection_name = connection.name.clone();
         let source_connection_id = Some(connection.id.clone());
         let geometry_session_hint = after_session_id
