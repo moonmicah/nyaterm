@@ -13,6 +13,7 @@ const LEGACY_COMMAND_MARKER_PREFIX: &str = "7777;DflyCommand:";
 const MAX_OSC_BUF: usize = 64 * 1024;
 const SUPPRESSED_OUTPUT_LIMIT: usize = 64 * 1024;
 pub(super) const SSH_INTEGRATION_TIMEOUT: Duration = Duration::from_secs(8);
+const SSH_INJECTION_UPLOAD_TIMEOUT: Duration = Duration::from_secs(5);
 const SUPPRESSION_DIAGNOSTIC_INITIAL: Duration = Duration::from_secs(1);
 const SUPPRESSION_DIAGNOSTIC_INTERVAL: Duration = Duration::from_secs(2);
 
@@ -130,72 +131,34 @@ impl SshShellIntegrationState {
         self.phase == SshShellIntegrationPhase::WaitInitial && self.pending_script.is_some()
     }
 
-    pub(super) async fn inject(
+    pub(super) fn take_pending_script(&mut self) -> Option<Vec<u8>> {
+        self.pending_script.take()
+    }
+
+    pub(super) fn begin_suppression(&mut self) {
+        self.phase = SshShellIntegrationPhase::Suppressing;
+        self.suppress_started_at = Some(Instant::now());
+        self.suppressed_visible_bytes = 0;
+        self.suppressed_rx_bytes = 0;
+        self.suppressed_rx_chunks = 0;
+        self.last_diagnostic_at = None;
+    }
+
+    pub(super) async fn apply_upload_outcome(
         &mut self,
-        handle: &SshShellHandle,
+        outcome: ScriptUploadOutcome,
+        script: Vec<u8>,
         channel: &mut russh::Channel<client::Msg>,
     ) {
-        let Some(script) = self.pending_script.take() else {
-            return;
-        };
-        let remote_path = format!(
-            "/tmp/.nyaterm_inj_{}_{}.sh",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| d.as_millis())
-                .unwrap_or(0)
-        );
-
-        // 打开 exec 通道（内联，不依赖额外函数）
-        let exec_ch = match handle {
-            SshShellHandle::Dedicated(h) => h.channel_open_session().await,
-            SshShellHandle::Multiplexed(h) => {
-                let h = h.lock().await;
-                h.channel_open_session().await
-            }
-        };
-
-        let write_ok = match exec_ch {
-            Ok(mut exec_ch) => {
-                let cmd = format!("cat > '{path}' && chmod 700 '{path}'", path = remote_path);
-                match exec_ch.exec(true, cmd.into_bytes()).await {
-                    Ok(()) => {
-                        let data_ok = exec_ch.data_bytes(script.clone()).await.is_ok();
-                        let _ = exec_ch.eof().await;
-
-                        let mut exit_status = None;
-                        while let Some(msg) = exec_ch.wait().await {
-                            match msg {
-                                ChannelMsg::ExitStatus { exit_status: s } => exit_status = Some(s),
-                                ChannelMsg::Close | ChannelMsg::Eof => break,
-                                _ => {}
-                            }
-                        }
-                        let _ = exec_ch.close().await;
-                        data_ok && exit_status.unwrap_or(1) == 0
-                    }
-                    Err(_) => false,
-                }
-            }
-            Err(_) => false,
-        };
-
-        if !write_ok {
+        if !outcome.success {
             let _ = channel.data_bytes(script).await;
-            self.phase = SshShellIntegrationPhase::Suppressing;
-            self.suppress_started_at = Some(Instant::now());
+            self.begin_suppression();
             return;
         }
 
-        let source_cmd = format!(". '{path}'; rm -f '{path}'\n", path = remote_path);
+        let source_cmd = format!(". '{path}'; rm -f '{path}'\n", path = outcome.remote_path);
         if channel.data_bytes(source_cmd.into_bytes()).await.is_ok() {
-            self.phase = SshShellIntegrationPhase::Suppressing;
-            self.suppress_started_at = Some(Instant::now());
-            self.suppressed_visible_bytes = 0;
-            self.suppressed_rx_bytes = 0;
-            self.suppressed_rx_chunks = 0;
-            self.last_diagnostic_at = None;
+            self.begin_suppression();
         } else {
             self.phase = SshShellIntegrationPhase::Normal;
             self.suppress_started_at = None;
@@ -286,6 +249,78 @@ impl SshShellIntegrationState {
                 }
             }
         }
+    }
+}
+
+pub(super) struct ScriptUploadOutcome {
+    remote_path: String,
+    success: bool,
+}
+
+impl ScriptUploadOutcome {
+    pub(super) fn failed() -> Self {
+        Self {
+            remote_path: String::new(),
+            success: false,
+        }
+    }
+}
+
+pub(super) async fn upload_integration_script(
+    handle: std::sync::Arc<SshShellHandle>,
+    script: Vec<u8>,
+) -> ScriptUploadOutcome {
+    let remote_path = format!(
+        "/tmp/.nyaterm_inj_{}_{}.sh",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis())
+            .unwrap_or(0)
+    );
+
+    let upload = async {
+        let exec_ch = match handle.as_ref() {
+            SshShellHandle::Dedicated(h) => h.channel_open_session().await,
+            SshShellHandle::Multiplexed(h) => {
+                let h = h.lock().await;
+                h.channel_open_session().await
+            }
+        };
+
+        match exec_ch {
+            Ok(mut exec_ch) => {
+                let cmd = format!("cat > '{path}' && chmod 700 '{path}'", path = remote_path);
+                match exec_ch.exec(true, cmd.into_bytes()).await {
+                    Ok(()) => {
+                        let data_ok = exec_ch.data_bytes(script).await.is_ok();
+                        let _ = exec_ch.eof().await;
+
+                        let mut exit_status = None;
+                        while let Some(msg) = exec_ch.wait().await {
+                            match msg {
+                                ChannelMsg::ExitStatus { exit_status: s } => exit_status = Some(s),
+                                ChannelMsg::Close | ChannelMsg::Eof => break,
+                                _ => {}
+                            }
+                        }
+                        let _ = exec_ch.close().await;
+                        data_ok && exit_status.unwrap_or(0) == 0
+                    }
+                    Err(_) => false,
+                }
+            }
+            Err(_) => false,
+        }
+    };
+
+    let success = tokio::time::timeout(SSH_INJECTION_UPLOAD_TIMEOUT, upload)
+        .await
+        .unwrap_or(false);
+
+    ScriptUploadOutcome {
+        remote_path,
+        success,
     }
 }
 

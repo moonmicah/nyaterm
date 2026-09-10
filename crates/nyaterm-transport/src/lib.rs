@@ -1886,6 +1886,17 @@ fn drain_deferred_ssh_open_commands(
     }
 }
 
+fn abort_pending_upload(
+    pending_upload: &mut Option<(
+        Vec<u8>,
+        tokio::task::JoinHandle<ssh_shell_integration::ScriptUploadOutcome>,
+    )>,
+) {
+    if let Some((_, join)) = pending_upload.take() {
+        join.abort();
+    }
+}
+
 async fn run_open_ssh_shell_session(
     session_id: String,
     open_session: OpenSshShellSession,
@@ -1906,6 +1917,7 @@ async fn run_open_ssh_shell_session(
         legacy_ready_marker,
         shell_kind: _shell_kind,
     } = open_session;
+    let handle = Arc::new(handle);
     let mut shell_integration =
         SshShellIntegrationState::new(injection_script, ready_marker, legacy_ready_marker);
     if let Some(notice) = local_notice {
@@ -1924,7 +1936,7 @@ async fn run_open_ssh_shell_session(
                 send_session_error(&event_queue, &session_id, error);
                 disconnect_open_ssh_shell(
                     &session_id,
-                    handle,
+                    &handle,
                     jump_handles,
                     disconnect_on_close,
                     x11_multiplex_registration,
@@ -1940,10 +1952,49 @@ async fn run_open_ssh_shell_session(
     let inject_timeout = tokio::time::sleep(ssh_shell_integration::SSH_INTEGRATION_TIMEOUT);
     tokio::pin!(inject_timeout);
 
+    let mut pending_upload: Option<(
+        Vec<u8>,
+        tokio::task::JoinHandle<ssh_shell_integration::ScriptUploadOutcome>,
+    )> = None;
+
     loop {
         tokio::select! {
             _ = &mut initial_inject_delay, if shell_integration.should_inject_on_initial_delay() => {
-                shell_integration.inject(&handle, &mut channel).await;
+                if let Some(script) = shell_integration.take_pending_script() {
+                    shell_integration.begin_suppression();
+                    inject_timeout
+                        .as_mut()
+                        .reset(
+                            tokio::time::Instant::now()
+                                + ssh_shell_integration::SSH_INTEGRATION_TIMEOUT,
+                        );
+                    let task_handle = Arc::clone(&handle);
+                    let task_script = script.clone();
+                    let join = tokio::spawn(ssh_shell_integration::upload_integration_script(
+                        task_handle,
+                        task_script,
+                    ));
+                    pending_upload = Some((script, join));
+                }
+            }
+            outcome = async {
+                match pending_upload.as_mut() {
+                    Some((_, join)) => join.await,
+                    None => std::future::pending().await,
+                }
+            }, if pending_upload.is_some() => {
+                let (script, _join) = pending_upload
+                    .take()
+                    .expect("pending_upload checked Some by the select guard");
+                let outcome = outcome.unwrap_or_else(|_join_error| {
+                    // The upload task panicked or was cancelled; treat it as
+                    // a failed upload so we fall back to the direct-write
+                    // path below instead of hanging the injection forever.
+                    ssh_shell_integration::ScriptUploadOutcome::failed()
+                });
+                shell_integration
+                    .apply_upload_outcome(outcome, script, &mut channel)
+                    .await;
                 inject_timeout
                     .as_mut()
                     .reset(
@@ -1976,6 +2027,7 @@ async fn run_open_ssh_shell_session(
                             pending_writes.push_back(data);
                         } else if let Err(error) = channel.data_bytes(data).await {
                                 send_session_error(&event_queue, &session_id, error);
+                                abort_pending_upload(&mut pending_upload);
                                 break;
                         }
                     }
@@ -1995,10 +2047,12 @@ async fn run_open_ssh_shell_session(
                             .await
                         {
                             send_session_error(&event_queue, &session_id, error);
+                            abort_pending_upload(&mut pending_upload);
                             break;
                         }
                     }
                     Some(SshCommand::Close) | None => {
+                        abort_pending_upload(&mut pending_upload);
                         let _ = channel.eof().await;
                         let _ = channel.close().await;
                         break;
@@ -2012,13 +2066,22 @@ async fn run_open_ssh_shell_session(
                         let output = shell_integration.filter_output(&data);
                         push_ssh_integration_output(&event_queue, &session_id, output);
                         if was_waiting_initial && shell_integration.is_waiting_initial() {
-                            shell_integration.inject(&handle, &mut channel).await;
-                            inject_timeout
-                                .as_mut()
-                                .reset(
-                                    tokio::time::Instant::now()
-                                        + ssh_shell_integration::SSH_INTEGRATION_TIMEOUT,
-                                );
+                           if let Some(script) = shell_integration.take_pending_script() {
+                                shell_integration.begin_suppression();
+                                inject_timeout
+                                    .as_mut()
+                                    .reset(
+                                        tokio::time::Instant::now()
+                                            + ssh_shell_integration::SSH_INTEGRATION_TIMEOUT,
+                                    );
+                                let task_handle = Arc::clone(&handle);
+                                let task_script = script.clone();
+                                let join = tokio::spawn(ssh_shell_integration::upload_integration_script(
+                                    task_handle,
+                                    task_script,
+                                ));
+                                pending_upload = Some((script, join));
+                            }
                         }
                         if shell_integration.is_normal() {
                             while let Some(data) = pending_writes.pop_front() {
@@ -2034,6 +2097,7 @@ async fn run_open_ssh_shell_session(
                             session_id: session_id.clone(),
                             reason: format!("SSH channel exit status {exit_status}"),
                         });
+                        abort_pending_upload(&mut pending_upload);
                         break;
                     }
                     Some(ChannelMsg::Eof) => {
@@ -2041,6 +2105,7 @@ async fn run_open_ssh_shell_session(
                             session_id: session_id.clone(),
                             reason: "SSH channel EOF".to_string(),
                         });
+                        abort_pending_upload(&mut pending_upload);
                         break;
                     }
                     Some(ChannelMsg::Close) => {
@@ -2048,6 +2113,7 @@ async fn run_open_ssh_shell_session(
                             session_id: session_id.clone(),
                             reason: "SSH channel closed by remote".to_string(),
                         });
+                        abort_pending_upload(&mut pending_upload);
                         break;
                     }
                     None => {
@@ -2055,6 +2121,7 @@ async fn run_open_ssh_shell_session(
                             session_id: session_id.clone(),
                             reason: "SSH connection task ended".to_string(),
                         });
+                        abort_pending_upload(&mut pending_upload);
                         break;
                     }
                     Some(_) => {}
@@ -2062,10 +2129,11 @@ async fn run_open_ssh_shell_session(
             }
         }
     }
+    abort_pending_upload(&mut pending_upload);
 
     disconnect_open_ssh_shell(
         &session_id,
-        handle,
+        &handle,
         jump_handles,
         disconnect_on_close,
         x11_multiplex_registration,
@@ -2348,7 +2416,7 @@ async fn disconnect_pending_ssh_shell(session: PendingOpenSshShellSession) {
 
 async fn disconnect_open_ssh_shell(
     session_id: &str,
-    handle: SshShellHandle,
+    handle: &SshShellHandle,
     jump_handles: Vec<client::Handle<SshClientHandler>>,
     disconnect_on_close: bool,
     x11_multiplex_registration: Option<SshMultiplexHandle>,
