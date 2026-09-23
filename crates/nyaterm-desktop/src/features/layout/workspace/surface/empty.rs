@@ -3,11 +3,10 @@ use rust_i18n::t;
 use gpui::{Context, FontWeight, IntoElement, SharedString, div, prelude::*, px, rgb, svg};
 use nyaterm_core::truncate_preview;
 
+use crate::features::NyaTermApp;
 use crate::features::view_widgets::{
     connection_spinner, empty_workspace_action, nyaterm_logo_mark,
 };
-use crate::features::{NyaTermApp, text_inputs::TextInputSetup};
-use crate::models::BottomPanelMode;
 use crate::models::NavItem;
 
 impl NyaTermApp {
@@ -80,17 +79,7 @@ impl NyaTermApp {
                                 show_commands_label,
                                 show_commands,
                                 cx.listener(|this, _, window, cx| {
-                                    this.set_bottom_panel_mode(BottomPanelMode::QuickCommands);
-                                    let search = this.commands.quick_search_draft().to_string();
-                                    let field = this.text_input(
-                                        "quick-command.search",
-                                        &search,
-                                        TextInputSetup::placeholder(t!("quickCommands.search")),
-                                        cx,
-                                    );
-                                    window.focus(&field.read(cx).focus_handle(), cx);
-                                    this.shell.set_status("quick commands opened".to_string());
-                                    cx.notify();
+                                    this.open_quick_commands(window, cx);
                                 }),
                             ))
                             .child(empty_workspace_action(

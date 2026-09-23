@@ -1,12 +1,15 @@
+use rust_i18n::t;
+
 use gpui::{
     Context, InteractiveElement as _, IntoElement, MouseButton, MouseDownEvent, MouseMoveEvent,
-    SharedString, StatefulInteractiveElement as _, Styled as _, deferred,
+    SharedString, StatefulInteractiveElement as _, Styled as _, Window, deferred,
     prelude::FluentBuilder as _,
 };
 
 use crate::features::{
     NyaTermApp, settings::UiLayoutSettingsUpdate, shell::state::RESIZE_HANDLE_HOVER_DELAY,
-    view_widgets::horizontal_resize_handle_visual, view_widgets::vertical_resize_handle_visual,
+    text_inputs::TextInputSetup, view_widgets::horizontal_resize_handle_visual,
+    view_widgets::vertical_resize_handle_visual,
 };
 use crate::models::{BottomPanelMode, PanelResizeSide};
 
@@ -55,6 +58,26 @@ impl NyaTermApp {
     pub(in crate::features) fn set_bottom_panel_mode(&mut self, mode: BottomPanelMode) {
         self.shell.bottom_panel.mode = mode;
         self.persist_ui_layout();
+    }
+
+    /// Opens the quick command panel and focuses its search box so typing
+    /// immediately filters from every entry point.
+    pub(in crate::features) fn open_quick_commands(
+        &mut self,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.set_bottom_panel_mode(BottomPanelMode::QuickCommands);
+        let search = self.commands.quick_search_draft().to_string();
+        let field = self.text_input(
+            "quick-command.search",
+            &search,
+            TextInputSetup::placeholder(t!("quickCommands.search")),
+            cx,
+        );
+        window.focus(&field.read(cx).focus_handle(), cx);
+        self.shell.set_status("quick commands opened".to_string());
+        cx.notify();
     }
 
     pub(in crate::features) fn start_panel_resize(

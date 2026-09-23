@@ -775,3 +775,109 @@ fn quick_command_sort_mode_label(
         QuickCommandSortMode::Custom => custom_label,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use gpui::{
+        AppContext as _, ClipboardItem, Entity, IntoElement, ParentElement, Render, Styled,
+        TestAppContext, VisualTestContext, div,
+    };
+    use nyaterm_core::{AppRuntime, RuntimeMode};
+
+    use crate::entities::{OverlayStore, StartupRestoreStore, UiStoreHandles};
+    use crate::features::NyaTermApp;
+    use crate::test_support::TestConfigDir;
+
+    struct AppHost {
+        app: Entity<NyaTermApp>,
+    }
+
+    impl Render for AppHost {
+        fn render(
+            &mut self,
+            _window: &mut gpui::Window,
+            cx: &mut gpui::Context<Self>,
+        ) -> impl IntoElement {
+            let panel = self
+                .app
+                .update(cx, |app, cx| app.bottom_panel_view(cx).into_any_element());
+            div().size_full().child(panel)
+        }
+    }
+
+    fn test_app(cx: &mut TestAppContext, root: &Path) -> Entity<NyaTermApp> {
+        let runtime = AppRuntime::from_parts_for_test(
+            RuntimeMode::Portable,
+            root.to_path_buf(),
+            root.join("config"),
+            root.join("logs"),
+            root.join("cache"),
+            None,
+        );
+        let stores = UiStoreHandles {
+            startup_restore: cx.new(|_| StartupRestoreStore::default()),
+            overlays: cx.new(|_| OverlayStore::default()),
+        };
+        cx.new(|cx| NyaTermApp::new(runtime, stores, cx))
+    }
+
+    fn draw(app: &Entity<NyaTermApp>, cx: &mut VisualTestContext) {
+        cx.run_until_parked();
+        cx.update(|window, cx| {
+            app.update(cx, |_, cx| cx.notify());
+            _ = window.draw(cx);
+        });
+        cx.run_until_parked();
+    }
+
+    #[test]
+    fn show_all_commands_shortcut_focuses_search_so_typing_and_paste_filter() {
+        let test_dir = TestConfigDir::new("nyaterm-quick-commands-panel-search");
+        let mut cx = TestAppContext::single();
+        let app = test_app(&mut cx, test_dir.path());
+        cx.update_entity(&app, |app, cx| app.sync_component_theme(cx));
+        let host_app = app.clone();
+        let (_, cx) = cx.add_window_view(move |_, _| AppHost { app: host_app });
+        let cx: &mut VisualTestContext = cx;
+
+        // The palette shortcut must open the panel with its search box focused;
+        // without focus, typed keys go elsewhere and the draft never updates.
+        cx.update(|window, cx| {
+            app.update(cx, |app, cx| {
+                app.execute_shortcut_invocation(
+                    crate::shortcuts::ShortcutInvocation {
+                        id: crate::shortcuts::ShortcutId::ShowAllCommands,
+                        tab_index: None,
+                    },
+                    window,
+                    cx,
+                );
+            });
+            _ = window.draw(cx);
+        });
+        cx.run_until_parked();
+
+        cx.simulate_keystrokes("s");
+        cx.run_until_parked();
+        let typed_draft = cx.update(|_, cx| app.read(cx).commands.quick_search_draft().to_string());
+        assert_eq!(
+            typed_draft, "s",
+            "typing while the panel is open should filter the quick command list"
+        );
+
+        cx.update(|_, cx| {
+            cx.write_to_clipboard(ClipboardItem::new_string("sh".to_string()));
+        });
+        cx.simulate_keystrokes("ctrl-v");
+        cx.run_until_parked();
+        draw(&app, cx);
+        let pasted_draft =
+            cx.update(|_, cx| app.read(cx).commands.quick_search_draft().to_string());
+        assert_eq!(
+            pasted_draft, "ssh",
+            "pasting into the focused search box should also update the draft"
+        );
+    }
+}
