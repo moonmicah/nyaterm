@@ -2,6 +2,7 @@
 
 mod action_links;
 mod external_process;
+mod gpui_compat;
 mod i18n;
 mod send_command;
 mod shortcuts;

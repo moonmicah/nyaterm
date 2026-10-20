@@ -1,5 +1,7 @@
 use rust_i18n::t;
 
+use crate::gpui_compat as compat;
+
 use std::borrow::Cow;
 
 use gpui::{
@@ -223,8 +225,10 @@ impl NyaTermApp {
                 )
                 .into_any_element();
         }
-        let (Some(framebuffer), Some(texture)) = (session.framebuffer.as_ref(), session.texture)
-        else {
+        let (Some(framebuffer), Some(texture)) = (
+            session.framebuffer.as_ref(),
+            session.texture.as_ref().map(compat::clone_texture),
+        ) else {
             let detail = match session.state {
                 RemoteDesktopViewState::Connecting => t!("remoteDesktop.connecting"),
                 RemoteDesktopViewState::Disconnecting => {
@@ -251,7 +255,7 @@ impl NyaTermApp {
         let cursor_shape = session.cursor_shape.clone();
         let cursor_position = session.cursor_position;
         let cursor_visible = session.cursor_visible;
-        let cursor_texture = session.cursor_texture;
+        let cursor_texture = session.cursor_texture.as_ref().map(compat::clone_texture);
         let app = cx.entity();
         let surface_focus = self.remote_desktop.focus().clone();
         let is_vnc = self.session.metadata(&session_id).is_some_and(|metadata| {
@@ -298,8 +302,12 @@ impl NyaTermApp {
                     remote_desktop_image_bounds(bounds, remote_size.0, remote_size.1, scale_mode)
                 },
                 move |_bounds, image_bounds, window, _cx| {
-                    let _ = window.paint_dynamic_texture(image_bounds, texture);
-                    if let (Some(cursor), Some(cursor_texture)) = (&cursor_shape, cursor_texture)
+                    // The remote cursor is painted below, so the native pointer
+                    // is hidden for this frame instead of trailing it.
+                    window.set_window_cursor_hidden(hide_native_cursor);
+                    let _ = compat::paint_dynamic_texture(window, image_bounds, &texture);
+                    if let (Some(cursor), Some(cursor_texture)) =
+                        (&cursor_shape, cursor_texture.as_ref())
                         && cursor_visible
                         && remote_size.0 > 0
                         && remote_size.1 > 0
@@ -320,7 +328,8 @@ impl NyaTermApp {
                                 px(cursor.height as f32 * scale_y),
                             ),
                         );
-                        let _ = window.paint_dynamic_texture(cursor_bounds, cursor_texture);
+                        let _ =
+                            compat::paint_dynamic_texture(window, cursor_bounds, cursor_texture);
                     }
                 },
             )
@@ -360,11 +369,7 @@ impl NyaTermApp {
             .relative()
             .overflow_hidden()
             .bg(rgb(0x000000))
-            .cursor(if hide_native_cursor {
-                CursorStyle::Hidden
-            } else {
-                CursorStyle::Arrow
-            })
+            .cursor(CursorStyle::Arrow)
             .track_focus(&focus)
             .key_context(REMOTE_DESKTOP_KEY_CONTEXT)
             .on_action(cx.listener(move |this, _: &RemoteDesktopTab, window, cx| {

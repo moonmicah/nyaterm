@@ -1,11 +1,12 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
+use gpui::InputEvent as _;
 use gpui::{
-    AppContext as _, Context, Entity, InputEvent as _, IntoElement, Modifiers, MouseButton,
-    PointerCancelEvent, PointerCancelReason, Render, TestAppContext, Window, div, point,
-    prelude::*, px,
+    AppContext as _, Context, Entity, IntoElement, Modifiers, MouseButton, Render, TestAppContext,
+    Window, div, point, prelude::*, px,
 };
+use gpui::{PointerCancelEvent, PointerCancelReason};
 use nyaterm_core::{
     AppRuntime, RuntimeMode, StartWorkspaceMode, WorkspaceId, test_support::TestTempDir,
 };

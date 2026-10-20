@@ -415,8 +415,8 @@ mod tests {
             );
             draw_path_fixture(vcx);
             if remote && cfg!(target_os = "linux") {
-                // Linux deliberately has no remote file drag export; the local
-                // case must still exercise the first-press drag gesture.
+                // Linux deliberately has no remote file drag export, so only
+                // the local case exercises the first-press drag gesture.
                 vcx.update(|_, cx| assert!(!cx.has_active_drag()));
                 assert!(vcx.debug_bounds("transfer-file-drag-preview").is_none());
                 vcx.simulate_mouse_up(start, MouseButton::Left, Modifiers::none());
@@ -519,11 +519,12 @@ mod tests {
                 );
                 app.capture_transfer_drag(&drag, cx);
                 assert_eq!(drag.file_count(), 2);
-                let gpui::ExternalDragPayload::Files(paths) = app
+                let paths = match app
                     .resolve_transfer_drag(&drag, false, false, cx)
                     .expect("local tree snapshot")
-                else {
-                    panic!("real local paths required");
+                {
+                    gpui::ExternalDragPayload::Files(paths) => paths,
+                    _ => panic!("real local paths required"),
                 };
                 assert_eq!(paths.entries().len(), 2);
                 assert!(paths.entries().iter().any(|(_, directory)| *directory));

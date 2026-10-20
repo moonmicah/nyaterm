@@ -14,6 +14,7 @@ use nyaterm_remote_desktop::{
 use crate::features::NyaTermApp;
 use crate::features::remote_desktop::init_key_bindings;
 use crate::features::test_support::app_with_visible_local_session;
+use crate::gpui_compat as compat;
 use crate::models::SessionLaunchConfig;
 
 actions!(remote_desktop_keyboard_test, [RootTab, RootShiftTab]);
@@ -102,13 +103,13 @@ fn focused_rdp_and_vnc_surfaces_keep_tab_and_shift_tab_out_of_local_navigation()
         let (fixture, cx) = cx.add_window_view(move |window, cx| {
             fixture_app.update(cx, |app, _| {
                 let framebuffer = Framebuffer::new(1, 8, 8, RDP_FRAMEBUFFER_LIMITS).unwrap();
-                let texture = window
-                    .create_dynamic_texture(
-                        size(DevicePixels(8), DevicePixels(8)),
-                        framebuffer.pixels(),
-                        32,
-                    )
-                    .unwrap();
+                let texture = compat::create_dynamic_texture(
+                    window,
+                    size(DevicePixels(8), DevicePixels(8)),
+                    framebuffer.pixels(),
+                    32,
+                )
+                .unwrap();
                 let session = app.remote_desktop.sessions.get_mut("remote").unwrap();
                 session.framebuffer = Some(framebuffer);
                 session.texture = Some(texture);
