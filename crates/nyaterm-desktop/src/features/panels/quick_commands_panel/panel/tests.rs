@@ -1,7 +1,7 @@
+use gpui::InputEvent as _;
 use gpui::{
-    AppContext as _, Context, Entity, InputEvent as _, IntoElement, Modifiers, MouseButton,
-    MouseDownEvent, MouseUpEvent, Render, TestAppContext, VisualTestContext, Window, div, point,
-    prelude::*, px,
+    AppContext as _, Context, Entity, IntoElement, Modifiers, MouseButton, MouseDownEvent,
+    MouseUpEvent, Render, TestAppContext, VisualTestContext, Window, div, point, prelude::*, px,
 };
 use nyaterm_core::{
     AppRuntime, QuickCommand, QuickCommandCategory, RuntimeMode, test_support::TestTempDir,

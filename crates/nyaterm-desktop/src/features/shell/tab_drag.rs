@@ -1,6 +1,7 @@
+use gpui::PointerCancelEvent;
 use gpui::{
     AnyElement, Context, IntoElement as _, KeyDownEvent, MouseButton, MouseDownEvent, MouseUpEvent,
-    Pixels, Point, PointerCancelEvent, Styled as _, Window, canvas,
+    Pixels, Point, Styled as _, Window, canvas,
 };
 
 use super::tab_mouse::WorkspaceTabDragPayload;
@@ -196,7 +197,7 @@ impl NyaTermApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> bool {
-        if event.keystroke.key != "escape" || !cx.has_internal_drag() {
+        if event.keystroke.key != "escape" || !cx.has_active_drag() {
             return false;
         }
         cx.stop_active_drag(window);
@@ -212,6 +213,7 @@ impl NyaTermApp {
         cx: &mut Context<Self>,
     ) {
         let app = cx.entity().downgrade();
+        // Losing capture or a modal cancel must not leave a tab mid-drag.
         window.on_mouse_event(move |_: &PointerCancelEvent, phase, window, cx| {
             if phase.capture() {
                 let _ = app.update(cx, |app, cx| app.cancel_pointer_interactions(window, cx));

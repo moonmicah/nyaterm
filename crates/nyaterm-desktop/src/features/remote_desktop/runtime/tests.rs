@@ -7,6 +7,8 @@ use nyaterm_remote_desktop::{
     VncServerCapabilities, VncSessionState,
 };
 
+use crate::gpui_compat as compat;
+
 use super::{
     MAINTENANCE_INTERVAL, POINTER_MOVE_INTERVAL, RESIZE_DEBOUNCE, cancel_rdp_reconnect_schedule,
     clear_rdp_reconnect_after_frame, defer_rdp_pointer_move, inline_remote_desktop_password,
@@ -899,7 +901,11 @@ fn texture_failure_isolated_and_inactive_framebuffer_can_rebuild() {
             app.remote_desktop.insert_connecting("healthy".into());
             app.remote_desktop.insert_connecting("broken".into());
             app.reset_rdp_framebuffer("healthy", 1, 8, 8, RDP_FRAMEBUFFER_LIMITS, window);
-            let texture = app.remote_desktop.sessions["healthy"].texture.unwrap();
+            let texture = app.remote_desktop.sessions["healthy"]
+                .texture
+                .as_ref()
+                .map(compat::clone_texture)
+                .unwrap();
             let pixels = app.remote_desktop.sessions["healthy"]
                 .framebuffer
                 .as_ref()
@@ -919,7 +925,7 @@ fn texture_failure_isolated_and_inactive_framebuffer_can_rebuild() {
                 pixels
             );
             for old in app.remote_desktop.pending_texture_removals.drain(..) {
-                window.remove_dynamic_texture(old);
+                compat::remove_dynamic_texture(window, old);
             }
             app.prepare_remote_desktop_textures("healthy", window);
             assert_ne!(
@@ -1002,5 +1008,57 @@ fn unsupported_activex_never_queues_a_helper_or_waits_for_layout_on_start_or_ret
                 }
             }
         }
+    });
+}
+
+/// The engine rejects writes that would spill out of a texture's tile: the
+/// framebuffer geometry comes from the protocol, so a malformed frame must
+/// fail loudly instead of scribbling over a neighbouring atlas tile.
+#[test]
+fn dynamic_texture_updates_stay_inside_the_allocation() {
+    use gpui::{Bounds, DevicePixels, IntoElement, Render, TestAppContext, Window, point, size};
+
+    struct EmptyView;
+    impl Render for EmptyView {
+        fn render(&mut self, _: &mut Window, _: &mut gpui::Context<Self>) -> impl IntoElement {
+            gpui::div()
+        }
+    }
+
+    let mut cx = TestAppContext::single();
+    let _cleanup = crate::test_support::TestAppCleanup::new(&cx);
+    let (_, cx) = cx.add_window_view(|_, _| EmptyView);
+    cx.update(|window, _| {
+        let texture_size = size(DevicePixels(4), DevicePixels(4));
+        let texture = compat::create_dynamic_texture(window, texture_size, &[0u8; 64], 16)
+            .expect("allocate a 4x4 texture");
+        assert_eq!(texture.size(), texture_size);
+
+        let region = |x: i32, y: i32, width: i32, height: i32| {
+            Bounds::new(
+                point(DevicePixels(x), DevicePixels(y)),
+                size(DevicePixels(width), DevicePixels(height)),
+            )
+        };
+        assert!(
+            compat::update_dynamic_texture(window, &texture, region(0, 0, 2, 2), &[7u8; 16], 8)
+                .is_ok()
+        );
+        // One column past the right edge.
+        assert!(
+            compat::update_dynamic_texture(window, &texture, region(3, 0, 2, 2), &[7u8; 16], 8)
+                .is_err()
+        );
+        // A source stride narrower than the region.
+        assert!(
+            compat::update_dynamic_texture(window, &texture, region(0, 0, 2, 2), &[7u8; 16], 4)
+                .is_err()
+        );
+        // A source shorter than the region claims.
+        assert!(
+            compat::update_dynamic_texture(window, &texture, region(0, 0, 2, 2), &[7u8; 8], 8)
+                .is_err()
+        );
+        compat::remove_dynamic_texture(window, texture);
     });
 }

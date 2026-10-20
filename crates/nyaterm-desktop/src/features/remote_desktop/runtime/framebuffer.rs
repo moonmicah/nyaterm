@@ -2,6 +2,7 @@ use super::events::set_rdp_view_error;
 use super::lifecycle::clear_rdp_reconnect_after_frame;
 use crate::features::NyaTermApp;
 use crate::features::remote_desktop::state::RemoteDesktopSessionState;
+use crate::gpui_compat::{self as compat, DynamicTexture};
 use gpui::{Bounds, DevicePixels, Point, Size, Window, point, size};
 use nyaterm_remote_desktop::{
     DirtyRect, Framebuffer, FramebufferLimits, RdpErrorKind, RdpFrameEvent, RemoteCursorEvent,
@@ -122,8 +123,10 @@ impl NyaTermApp {
             self.prepare_remote_desktop_textures(session_id, window);
             return;
         }
-        let (Some(framebuffer), Some(texture)) = (session.framebuffer.as_ref(), session.texture)
-        else {
+        let (Some(framebuffer), Some(texture)) = (
+            session.framebuffer.as_ref(),
+            session.texture.as_ref().map(compat::clone_texture),
+        ) else {
             return;
         };
         let area = u64::from(framebuffer.width()) * u64::from(framebuffer.height());
@@ -132,8 +135,9 @@ impl NyaTermApp {
             .map(|rect| u64::from(rect.width) * u64::from(rect.height))
             .sum::<u64>();
         let result = if dirty.len() > 64 || dirty_area.saturating_mul(100) >= area * 60 {
-            window.update_dynamic_texture(
-                texture,
+            compat::update_dynamic_texture(
+                window,
+                &texture,
                 Bounds::new(
                     Point::new(DevicePixels(0), DevicePixels(0)),
                     Size::new(
@@ -147,7 +151,7 @@ impl NyaTermApp {
         } else {
             nyaterm_remote_desktop::merge_dirty_rects(dirty)
                 .into_iter()
-                .try_for_each(|rect| upload_rdp_rect(window, texture, framebuffer, rect))
+                .try_for_each(|rect| upload_rdp_rect(window, &texture, framebuffer, rect))
         };
         if let Err(error) = result {
             self.stop_remote_desktop_uploads(
@@ -184,7 +188,7 @@ impl NyaTermApp {
                         continue;
                     }
                     if let Some(texture) = session.cursor_texture.take() {
-                        window.remove_dynamic_texture(texture);
+                        compat::remove_dynamic_texture(window, texture);
                     }
                     session.cursor_shape = Some(shape);
                 }
@@ -223,10 +227,10 @@ impl NyaTermApp {
 
 fn release_textures(session: &mut RemoteDesktopSessionState, window: &mut Window) {
     if let Some(texture) = session.texture.take() {
-        window.remove_dynamic_texture(texture);
+        compat::remove_dynamic_texture(window, texture);
     }
     if let Some(texture) = session.cursor_texture.take() {
-        window.remove_dynamic_texture(texture);
+        compat::remove_dynamic_texture(window, texture);
     }
 }
 
@@ -239,17 +243,19 @@ fn prepare_textures(
             DevicePixels(framebuffer.width() as i32),
             DevicePixels(framebuffer.height() as i32),
         );
-        if let Some(texture) = session.texture {
+        if let Some(texture) = session.texture.as_ref().map(compat::clone_texture) {
             if session.texture_dirty {
-                window.update_dynamic_texture(
-                    texture,
+                compat::update_dynamic_texture(
+                    window,
+                    &texture,
                     Bounds::new(Point::new(DevicePixels(0), DevicePixels(0)), dimensions),
                     framebuffer.pixels(),
                     framebuffer.width() * 4,
                 )?;
             }
         } else {
-            session.texture = Some(window.create_dynamic_texture(
+            session.texture = Some(compat::create_dynamic_texture(
+                window,
                 dimensions,
                 framebuffer.pixels(),
                 framebuffer.width() * 4,
@@ -262,7 +268,8 @@ fn prepare_textures(
         && shape.width > 0
         && shape.height > 0
     {
-        session.cursor_texture = Some(window.create_dynamic_texture(
+        session.cursor_texture = Some(compat::create_dynamic_texture(
+            window,
             size(
                 DevicePixels(shape.width as i32),
                 DevicePixels(shape.height as i32),
@@ -276,7 +283,7 @@ fn prepare_textures(
 
 pub(super) fn upload_rdp_rect(
     window: &mut Window,
-    texture: gpui::DynamicTexture,
+    texture: &DynamicTexture,
     framebuffer: &Framebuffer,
     rect: DirtyRect,
 ) -> anyhow::Result<()> {
@@ -285,7 +292,8 @@ pub(super) fn upload_rdp_rect(
     let row_bytes = rect.width * 4;
     let len = (u64::from(rect.height - 1) * u64::from(stride) + u64::from(row_bytes)) as usize;
     let pixels = &framebuffer.pixels()[start..start + len];
-    window.update_dynamic_texture(
+    compat::update_dynamic_texture(
+        window,
         texture,
         Bounds::new(
             point(DevicePixels(rect.x as i32), DevicePixels(rect.y as i32)),

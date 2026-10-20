@@ -4,9 +4,10 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
 
+use crate::gpui_compat::DynamicTexture;
 use crate::models::event_wake::{ANY_INTEREST, EventWake};
 use futures::channel::mpsc::UnboundedReceiver;
-use gpui::{Bounds, DynamicTexture, FocusHandle, Pixels, Subscription};
+use gpui::{Bounds, FocusHandle, Pixels, Subscription};
 use nyaterm_remote_desktop::{
     CertificatePromptReason, ClipboardTracker, CursorPosition, CursorShape, Framebuffer, KeyMapper,
     RdpCapability, RdpCertificateRequest, RdpDisplayMetrics, RdpError, RdpErrorKind,

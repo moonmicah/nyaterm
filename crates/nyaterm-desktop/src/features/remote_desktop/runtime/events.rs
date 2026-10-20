@@ -3,6 +3,7 @@ use super::input::POINTER_MOVE_INTERVAL;
 use super::lifecycle::cancel_rdp_reconnect_schedule;
 use crate::features::NyaTermApp;
 use crate::features::remote_desktop::state::resize::should_disable_dynamic_resize_after_state;
+use crate::gpui_compat as compat;
 use crate::models::TransferJobKind;
 use crate::models::TransferJobState;
 use crate::models::TransferJobStatus;
@@ -123,7 +124,7 @@ impl NyaTermApp {
         cx: &mut Context<Self>,
     ) -> bool {
         for texture in self.remote_desktop.pending_texture_removals.drain(..) {
-            window.remove_dynamic_texture(texture);
+            compat::remove_dynamic_texture(window, texture);
         }
         let mut ids = self
             .remote_desktop

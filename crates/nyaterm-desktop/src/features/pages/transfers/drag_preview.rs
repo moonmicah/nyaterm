@@ -53,7 +53,7 @@ pub(super) fn with_transfer_drag<E: gpui::StatefulInteractiveElement>(
     palette: ThemePalette,
 ) -> E {
     let resolve_app = app.clone();
-    element
+    let element = element
         .on_drag(drag, move |drag, position, _, cx| {
             if let Some(app) = app.upgrade() {
                 app.update(cx, |app, cx| app.capture_transfer_drag(drag, cx));
@@ -70,17 +70,18 @@ pub(super) fn with_transfer_drag<E: gpui::StatefulInteractiveElement>(
                 palette,
             })
         })
-        .can_drag(|event, _, _| !event.modifiers.modified())
         .external_drag_payload(
-            move |drag: &crate::features::transfers::drag_export::DraggedSelection, window, cx| {
+            move |drag: &crate::features::transfers::drag_export::DraggedSelection, _window, cx| {
                 resolve_app.upgrade()?.update(cx, |app, cx| {
                     app.resolve_transfer_drag(
                         drag,
-                        window.supports_virtual_file_drag(),
-                        window.supports_file_promise_drag(),
+                        crate::gpui_compat::supports_virtual_file_drag(),
+                        crate::gpui_compat::supports_file_promise_drag(),
                         cx,
                     )
                 })
             },
-        )
+        );
+    // Modifier-clicks select instead of starting a drag.
+    element.can_drag(|event, _, _| !event.modifiers.modified())
 }

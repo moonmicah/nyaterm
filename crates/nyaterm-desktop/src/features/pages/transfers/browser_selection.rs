@@ -142,8 +142,8 @@ impl NyaTermApp {
         // for export. Modifier gestures retain the existing range-selection path.
         let exportable = self.session.active_file_browser_backend()
             == Some(nyaterm_transport::FileBrowserBackendKind::Local)
-            || ((window.supports_virtual_file_drag()
-                || window.supports_file_promise_drag()
+            || ((crate::gpui_compat::supports_virtual_file_drag()
+                || crate::gpui_compat::supports_file_promise_drag()
                 || cfg!(target_os = "linux"))
                 && self.transfer.browser_view().entries.iter().any(|entry| {
                     entry.matches_identity(&path)
