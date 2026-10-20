@@ -1,3 +1,7 @@
 # `scripts/*.sh` would not match nested paths: in a pattern containing a slash, `*`
 # does not cross a `/`, so the CI scripts under scripts/ci/ need the `**` form.
 scripts/**/*.sh text eol=lf
+
+# Vendored crate sources under `vendor/` are unmodified upstream copies plus
+# local patches; keep their bytes exactly as-is and out of language stats.
+vendor/** -text linguist-vendored
