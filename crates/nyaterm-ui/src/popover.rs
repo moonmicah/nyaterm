@@ -446,7 +446,11 @@ mod tests {
     fn draw(cx: &mut VisualTestContext) {
         cx.run_until_parked();
         cx.update(|window, cx| {
-            _ = window.draw(cx);
+            // gpui-fast delivers `request_animation_frame` notifications through
+            // the platform frame loop; tests have no frame loop, so deliver them
+            // explicitly before drawing or a captured anchor never re-renders.
+            window.simulate_next_frame(cx);
+            window.draw(cx).clear(cx);
         });
     }
 
