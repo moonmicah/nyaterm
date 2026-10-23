@@ -1,16 +1,17 @@
 //! Mutable sprite-atlas textures for the remote desktop surface.
 //!
-//! `gpui-fast` carries the fork's dynamic-texture API, so on Windows the
-//! frames RDP/VNC produce are uploaded into a sub-region of an atlas texture
-//! (`ID3D11DeviceContext::UpdateSubresource`) and every painted frame reuses
-//! that same tile. Nothing is copied per frame beyond the dirty rects the
+//! `gpui-fast` carries the fork's dynamic-texture API, so on Windows and macOS
+//! the frames RDP/VNC produce are uploaded into a sub-region of an atlas
+//! texture and every painted frame reuses that same tile. Windows updates it
+//! through `ID3D11DeviceContext::UpdateSubresource`, macOS through Metal's
+//! `replaceRegion`, and nothing is copied per frame beyond the dirty rects the
 //! protocol already handed us.
 //!
-//! The Linux and macOS platform crates still have no in-place atlas upload, so
-//! those targets keep a CPU-side buffer whose contents are rebuilt into an
-//! image when they change. That path costs one full-buffer copy plus one atlas
-//! upload per painted frame, which is why it is limited to the targets that
-//! cannot do better.
+//! The Linux platform crate still has no in-place atlas upload, so that target
+//! keeps a CPU-side buffer whose contents are rebuilt into an image when they
+//! change. That path costs one full-buffer copy plus one atlas upload per
+//! painted frame, which is why it is limited to the target that cannot do
+//! better.
 //!
 //! These are free functions rather than a `Window` extension trait on purpose:
 //! `Window` now has inherent methods with the same names, and inherent methods
@@ -19,13 +20,13 @@
 
 use gpui::{Bounds, DevicePixels, Pixels, Size, Window};
 
-#[cfg(target_os = "windows")]
+#[cfg(any(target_os = "windows", target_os = "macos"))]
 pub(crate) use gpui::DynamicTexture;
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
 pub(crate) use buffered::DynamicTexture;
 
-#[cfg(target_os = "windows")]
+#[cfg(any(target_os = "windows", target_os = "macos"))]
 pub(crate) fn create_dynamic_texture(
     window: &mut Window,
     size: Size<DevicePixels>,
@@ -35,7 +36,7 @@ pub(crate) fn create_dynamic_texture(
     Window::create_dynamic_texture(window, size, pixels, bytes_per_row)
 }
 
-#[cfg(target_os = "windows")]
+#[cfg(any(target_os = "windows", target_os = "macos"))]
 pub(crate) fn update_dynamic_texture(
     window: &mut Window,
     texture: &DynamicTexture,
@@ -46,7 +47,7 @@ pub(crate) fn update_dynamic_texture(
     Window::update_dynamic_texture(window, *texture, bounds, pixels, bytes_per_row)
 }
 
-#[cfg(target_os = "windows")]
+#[cfg(any(target_os = "windows", target_os = "macos"))]
 pub(crate) fn paint_dynamic_texture(
     window: &mut Window,
     bounds: Bounds<Pixels>,
@@ -55,12 +56,12 @@ pub(crate) fn paint_dynamic_texture(
     Window::paint_dynamic_texture(window, bounds, *texture)
 }
 
-#[cfg(target_os = "windows")]
+#[cfg(any(target_os = "windows", target_os = "macos"))]
 pub(crate) fn remove_dynamic_texture(window: &mut Window, texture: DynamicTexture) {
     Window::remove_dynamic_texture(window, texture)
 }
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
 pub(crate) use buffered::{
     create_dynamic_texture, paint_dynamic_texture, remove_dynamic_texture, update_dynamic_texture,
 };
@@ -83,15 +84,17 @@ pub(crate) fn supports_virtual_file_drag() -> bool {
     cfg!(target_os = "windows")
 }
 
-/// Promised drag has the receiver choose the destination path. The Windows
-/// shell side is not implemented (a promised payload is refused when the drag
-/// starts), and the macOS/Linux crates have no bridge for it either.
+/// Promised drag has the receiver choose the destination path. macOS answers it
+/// with one `NSFilePromiseProvider` per item, so Finder writes the SFTP content
+/// straight into the folder the user dropped on. The Windows shell side is not
+/// implemented (a promised payload is refused when the drag starts), and the
+/// Linux crate has no bridge for it either.
 pub(crate) fn supports_file_promise_drag() -> bool {
-    false
+    cfg!(target_os = "macos")
 }
 
 /// CPU-side stand-in for platforms whose atlas cannot be written in place.
-#[cfg(not(target_os = "windows"))]
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
 mod buffered {
     use std::{cell::RefCell, rc::Rc, sync::Arc};
 
