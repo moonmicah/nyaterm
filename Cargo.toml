@@ -208,10 +208,11 @@ ironrdp-tls = { git = "https://github.com/nyakang/IronRDP", rev = "b10cd243bc944
 # cursors. The platform crates are patched for the same reason: the engine's
 # `ExternalDragPayload` and atlas contract grew variants and hooks that their
 # published copies predate, so an unpatched platform either refuses those
-# payloads or fails to compile against the widened enums. Delete these five
+# payloads or fails to compile against the widened enums. Delete these six
 # lines to go back to the crates.io packages.
 gpui-fast = { path = "vendor/gpui-fast" }
 gpui-fast-apple = { path = "vendor/gpui-fast-apple" }
+gpui-fast-linux = { path = "vendor/gpui-fast-linux" }
 gpui-fast-macos = { path = "vendor/gpui-fast-macos" }
 gpui-fast-platform = { path = "vendor/gpui-fast-platform" }
 gpui-fast-windows = { path = "vendor/gpui-fast-windows" }
