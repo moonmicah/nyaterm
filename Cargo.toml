@@ -205,16 +205,17 @@ ironrdp-tls = { git = "https://github.com/nyakang/IronRDP", rev = "b10cd243bc944
 # The GPUI Fast engine under `vendor/` carries the platform integration the
 # published crates do not ship: native virtual file drag-out, in-place atlas
 # texture updates (remote desktop frames), pointer-cancel events and hidden
-# cursors. The platform crates are patched for the same reason: the engine's
+# cursors. The platform backends are patched for the same reason: the engine's
 # `ExternalDragPayload` and atlas contract grew variants and hooks that their
-# published copies predate, so an unpatched platform either refuses those
-# payloads or fails to compile against the widened enums. Delete these six
-# lines to go back to the crates.io packages.
+# published copies predate, so an unpatched backend either refuses those
+# payloads or fails to compile against the widened enums. `gpui-fast-platform`
+# stays on the crates.io package: it only re-exports the backend for the
+# current target and never looks at a payload. Delete these five lines to go
+# back to the published crates.
 gpui-fast = { path = "vendor/gpui-fast" }
 gpui-fast-apple = { path = "vendor/gpui-fast-apple" }
 gpui-fast-linux = { path = "vendor/gpui-fast-linux" }
 gpui-fast-macos = { path = "vendor/gpui-fast-macos" }
-gpui-fast-platform = { path = "vendor/gpui-fast-platform" }
 gpui-fast-windows = { path = "vendor/gpui-fast-windows" }
 
 # gpui-kit takes zed-reqwest from git while this workspace uses the
