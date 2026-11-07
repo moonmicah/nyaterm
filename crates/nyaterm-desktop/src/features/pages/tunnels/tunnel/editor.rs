@@ -294,6 +294,7 @@ where
     tunnel_editor_selector_with_search(app, palette, id, label, options, selected_value, None, cx)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn tunnel_editor_searchable_selector<I>(
     app: &mut NyaTermApp,
     palette: crate::theme::ThemePalette,
