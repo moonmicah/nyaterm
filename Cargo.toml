@@ -76,10 +76,21 @@ reqwest = { version = "0.13.5", default-features = false, features = ["json", "q
 same-file = "1"
 tempfile = "3"
 glob = "0.3.4"
-gpui = { version = "=0.2.2", git = "https://github.com/nyakang/zed", rev = "a45a77c08a7cd5ed364778eb84961e1bde650b73" }
-gpui-base = { git = "https://github.com/nyakang/gpui-kit", rev = "c7410026f06bb07e56eeb619d8c0037c89e05682" }
-gpui-kit = { git = "https://github.com/nyakang/gpui-kit", rev = "c7410026f06bb07e56eeb619d8c0037c89e05682" }
-gpui_platform = { git = "https://github.com/nyakang/zed", rev = "a45a77c08a7cd5ed364778eb84961e1bde650b73" }
+gpui = { package = "gpui-fast", version = "=0.1.13", features = [
+    "windows-manifest-provided-by-host",
+] }
+gpui-base = { git = "https://github.com/nyakang/gpui-kit", rev = "c7410026f06bb07e56eeb619d8c0037c89e05682", features = [
+    "gpui-fast",
+] }
+gpui-kit = { git = "https://github.com/nyakang/gpui-kit", rev = "c7410026f06bb07e56eeb619d8c0037c89e05682", features = [
+    "gpui-fast",
+] }
+gpui_platform = { package = "gpui-fast-platform", version = "=0.1.13", features = [
+    "font-kit",
+    "x11",
+    "wayland",
+    "runtime_shaders",
+] }
 # Pure-Rust, `#![forbid(unsafe)]` PDF rasterizer (MIT OR Apache-2.0). Pinned
 # exactly: the crate is pre-1.0 and explicitly experimental, so a caret range
 # could pull in a breaking 0.8 without review. `embed-fonts` bundles the 14
@@ -176,8 +187,8 @@ debug = "line-tables-only"
 
 [profile.dev.package]
 alacritty_terminal = { opt-level = 1, debug = false }
-gpui = { opt-level = 1, debug = false }
-gpui_platform = { opt-level = 1, debug = false }
+gpui-fast = { opt-level = 1, debug = false }
+gpui-fast-platform = { opt-level = 1, debug = false }
 regex = { opt-level = 1, debug = false }
 regex-automata = { opt-level = 1, debug = false }
 regex-syntax = { opt-level = 1, debug = false }
@@ -196,6 +207,26 @@ inherits = "dev"
 debug = "full"
 
 [patch.crates-io]
+# The GPUI Fast engine under `vendor/` carries the platform integration the
+# published crates do not ship: native virtual file drag-out, in-place atlas
+# texture updates (remote desktop frames), pointer-cancel events and hidden
+# cursors. The platform backends are patched for the same reason: the engine's
+# `ExternalDragPayload` and atlas contract grew variants and hooks that their
+# published copies predate, so an unpatched backend either refuses those
+# payloads or fails to compile against the widened enums. `gpui-fast-platform`
+# stays on the crates.io package: it only re-exports the backend for the
+# current target and never looks at a payload. The copies are kept at the
+# `gpui-fast` version above and only diverge where the application needs the
+# Zed-fork API the published engine lacks (`CursorStyle::Hidden`,
+# `App::has_internal_drag`, `VisualTestContext::activate_accessibility`, and
+# the accessibility checkpoint `Window::transact` rolls back to on a retry).
+# Delete these five lines to go back to the published crates.
+gpui-fast = { path = "vendor/gpui-fast" }
+gpui-fast-apple = { path = "vendor/gpui-fast-apple" }
+gpui-fast-linux = { path = "vendor/gpui-fast-linux" }
+gpui-fast-macos = { path = "vendor/gpui-fast-macos" }
+gpui-fast-windows = { path = "vendor/gpui-fast-windows" }
+
 alacritty_terminal = { git = "https://github.com/nyakang/alacritty", rev = "6056cb4d0dc49a43a6542f3eb8a951c6d9220368" }
 ironrdp-client = { git = "https://github.com/nyakang/IronRDP", rev = "a15d5faa54192ad0eb2a1f9f4c9d8e1f06295970" }
 ironrdp-connector = { git = "https://github.com/nyakang/IronRDP", rev = "a15d5faa54192ad0eb2a1f9f4c9d8e1f06295970" }

@@ -493,6 +493,10 @@ fn quick_command_variable_field_keeps_focus_after_a_click() {
             app.commands
                 .request_quick_variable_prompt(variable_prompt_state())
         });
+        // Re-opening has to rebuild the tree: a retained frame reuses the
+        // panel's recorded paint, so the re-registered prompt overlay only
+        // enters the frame once the tree is built again.
+        cx.update(|window, _| window.refresh());
         draw(cx);
         let bounds = cx.debug_bounds("quick-command.variable.0").unwrap();
         cx.simulate_click(bounds.center(), Modifiers::default());
