@@ -44,6 +44,7 @@ pub struct SessionManager {
 
 pub(crate) enum ManagedSession {
     Adb(crate::adb_shell::AdbTerminalTransport),
+    Hdc(crate::hdc_shell::HdcTerminalTransport),
     Local(LocalPtyTransport),
     Ssh(SshChannelTransport),
     Tcp(Box<TelnetTransport>),
@@ -159,6 +160,42 @@ impl SessionManager {
             .insert(info.id.clone(), ManagedSession::Adb(transport));
         Ok(info)
     }
+
+    pub fn create_hdc_session(
+        &self,
+        config: crate::hdc_shell::HdcShellConfig,
+    ) -> Result<SessionInfo, SessionError> {
+        self.create_hdc_session_with_cancel(config, || Ok(()))
+    }
+
+    pub fn create_hdc_session_with_cancel(
+        &self,
+        config: crate::hdc_shell::HdcShellConfig,
+        mut check: impl FnMut() -> nyaterm_harmony::error::HdcResult<()>,
+    ) -> Result<SessionInfo, SessionError> {
+        check().map_err(|error| SessionError::Hdc(error.into()))?;
+        self.ensure_reaper()?;
+        let info = SessionInfo {
+            id: uuid::Uuid::new_v4().to_string(),
+            name: config.name,
+            kind: SessionKind::HdcShell,
+            working_dir: None,
+            cols: config.cols,
+            rows: config.rows,
+        };
+        let transport = crate::hdc_shell::HdcTerminalTransport::open(
+            info.clone(),
+            &config.binding,
+            self.event_queue.clone(),
+            &mut check,
+        )
+        .map_err(SessionError::Hdc)?;
+        self.sessions
+            .lock()
+            .map_err(|_| SessionError::LockPoisoned)?
+            .insert(info.id.clone(), ManagedSession::Hdc(transport));
+        Ok(info)
+    }
     pub fn new() -> Self {
         Self::with_ssh_services(SshSessionServices::default())
     }
@@ -220,6 +257,7 @@ impl SessionManager {
                 // Native cancellation and joins remain on the reaper worker.
                 match &session {
                     ManagedSession::Adb(adb) => adb.stop(),
+                    ManagedSession::Hdc(hdc) => hdc.stop(),
                     ManagedSession::Local(local) => local.writer.command_tx.stop(),
                     ManagedSession::Tcp(tcp) => tcp.writer.command_tx.stop(),
                     ManagedSession::Serial(serial) => serial.writer.command_tx.stop(),
@@ -915,7 +953,9 @@ impl SessionManager {
             // Output already queued by an exited session still needs protocol filtering.
             // Session existence is checked by the eventual writer, not this policy gate.
             match sessions.get(session_id) {
-                Some(ManagedSession::TmuxPane(_) | ManagedSession::Adb(_)) => false,
+                Some(
+                    ManagedSession::TmuxPane(_) | ManagedSession::Adb(_) | ManagedSession::Hdc(_),
+                ) => false,
                 Some(ManagedSession::Ssh(ssh)) if ssh.tmux_active.load(Ordering::Acquire) => false,
                 Some(ManagedSession::Serial(serial)) => {
                     serial.flow_control
@@ -936,7 +976,7 @@ impl SessionManager {
             Some(ManagedSession::Serial(s)) => s.writer.command_tx.peak_bytes(),
             Some(ManagedSession::Ssh(s)) => s.command_tx.peak_bytes(),
             Some(ManagedSession::TmuxPane(pane)) => pane.tmux_tx.peak_bytes(),
-            Some(ManagedSession::Adb(_)) | None => 0,
+            Some(ManagedSession::Adb(_) | ManagedSession::Hdc(_)) | None => 0,
         }
     }
 
@@ -1035,7 +1075,11 @@ impl SessionManager {
                             Some(ManagedSession::Ssh(s)) => {
                                 WriteCapacity::Ssh(s.command_tx.clone())
                             }
-                            Some(ManagedSession::TmuxPane(_) | ManagedSession::Adb(_)) => {
+                            Some(
+                                ManagedSession::TmuxPane(_)
+                                | ManagedSession::Adb(_)
+                                | ManagedSession::Hdc(_),
+                            ) => {
                                 return Err(SessionError::Write {
                                     session_id: session_id.into(),
                                     source: tmux_modem_unsupported().into(),
@@ -1318,6 +1362,7 @@ impl ManagedSession {
     pub(crate) fn info(&self) -> SessionInfo {
         match self {
             Self::Adb(session) => session.info.clone(),
+            Self::Hdc(session) => session.info.clone(),
             Self::Local(session) => session.info.clone(),
             Self::Ssh(session) => session.info.clone(),
             Self::Tcp(session) => session.info.clone(),
@@ -1329,6 +1374,7 @@ impl ManagedSession {
     pub(crate) fn write(&mut self, data: &[u8]) -> anyhow::Result<()> {
         match self {
             Self::Adb(session) => session.write(data),
+            Self::Hdc(session) => session.write(data),
             Self::Local(session) => session.write(data),
             Self::Tcp(session) => session.write(data),
             Self::Ssh(session) => session.write(data),
@@ -1340,6 +1386,7 @@ impl ManagedSession {
     pub(crate) fn write_raw(&mut self, data: &[u8]) -> anyhow::Result<()> {
         match self {
             Self::Adb(session) => session.write_raw(data),
+            Self::Hdc(session) => session.write_raw(data),
             Self::Local(session) => session.write_raw(data),
             Self::Tcp(session) => session.write_raw(data),
             Self::Ssh(session) => session.write_raw(data),
@@ -1357,6 +1404,7 @@ impl ManagedSession {
     ) -> anyhow::Result<()> {
         match self {
             Self::Adb(session) => session.resize(cols, rows, pixel_width, pixel_height),
+            Self::Hdc(session) => session.resize(cols, rows, pixel_width, pixel_height),
             Self::Local(session) => session.resize(cols, rows, pixel_width, pixel_height),
             Self::Tcp(session) => session.resize(cols, rows, pixel_width, pixel_height),
             Self::Ssh(session) => session.resize(cols, rows, pixel_width, pixel_height),
@@ -1368,6 +1416,9 @@ impl ManagedSession {
     pub(crate) fn close(&mut self) {
         match self {
             Self::Adb(session) => {
+                let _ = session.close();
+            }
+            Self::Hdc(session) => {
                 let _ = session.close();
             }
             Self::Local(session) => {

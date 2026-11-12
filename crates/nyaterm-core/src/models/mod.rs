@@ -2,6 +2,7 @@ pub mod android;
 pub mod connection;
 pub mod connection_batch;
 pub mod credentials;
+pub mod harmony;
 pub mod network;
 pub mod notes;
 pub mod quick_commands;

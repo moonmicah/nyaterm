@@ -60,6 +60,7 @@ mod ssh_worker;
 use ssh_worker::drain_deferred_ssh_open_commands;
 pub mod adb_shell;
 pub mod connection_attempt;
+pub mod hdc_shell;
 #[cfg(windows)]
 pub mod local_conpty;
 pub mod network_route;

@@ -34,6 +34,7 @@ members = [
     "crates/nyaterm-terminal-gpui",
     "crates/nyaterm-terminal-runtime",
     "crates/nyaterm-recording",
+    "crates/nyaterm-harmony",
     "crates/nyaterm-remote-ops",
     "crates/nyaterm-files",
     "crates/nyaterm-transport",
@@ -59,6 +60,7 @@ repository = "https://github.com/nyakang/nyaterm"
 
 [workspace.dependencies]
 nyaterm-android = { path = "crates/nyaterm-android" }
+nyaterm-harmony = { path = "crates/nyaterm-harmony" }
 nucleo-matcher = "0.3.1"
 automerge = "=0.12.0"
 httpdate = "1.0"

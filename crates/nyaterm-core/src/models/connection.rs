@@ -1,6 +1,7 @@
 pub mod validation;
 
 use crate::models::android::{AdbDeviceSelector, AndroidScreenSettings, default_android_directory};
+use crate::models::harmony::{HdcDeviceSelector, default_harmony_directory};
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -505,6 +506,11 @@ pub enum ConnectionType {
         directory: String,
         #[serde(default)]
         screen: AndroidScreenSettings,
+    },
+    Harmony {
+        device: HdcDeviceSelector,
+        #[serde(default = "default_harmony_directory")]
+        directory: String,
     },
     Ssh {
         host: String,
