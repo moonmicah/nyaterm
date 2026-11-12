@@ -443,9 +443,14 @@ mod tests {
         }
     }
 
+    /// Draws a frame. Test windows have no platform frame loop, so callbacks
+    /// scheduled through `Window::request_animation_frame` (the side popover
+    /// captures its anchor and asks for another frame before it renders its
+    /// content) have to be delivered before drawing.
     fn draw(cx: &mut VisualTestContext) {
         cx.run_until_parked();
         cx.update(|window, cx| {
+            window.simulate_next_frame(cx);
             _ = window.draw(cx);
         });
     }
