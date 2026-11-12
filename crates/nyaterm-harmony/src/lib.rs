@@ -13,5 +13,5 @@
 pub mod client;
 pub mod error;
 
-pub use client::{HdcClient, HdcDevice, resolve_executable};
+pub use client::{HdcClient, HdcDevice, HdcShellOutput, resolve_executable};
 pub use error::{HdcError, HdcResult};

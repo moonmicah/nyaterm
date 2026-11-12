@@ -7035,6 +7035,7 @@ dependencies = [
  "libc",
  "nyaterm-android",
  "nyaterm-core",
+ "nyaterm-harmony",
  "nyaterm-terminal",
  "nyaterm-transport",
  "russh",

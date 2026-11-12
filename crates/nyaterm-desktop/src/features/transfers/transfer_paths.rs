@@ -445,7 +445,8 @@ impl NyaTermApp {
                 };
                 let total = remote_paths.len();
                 if session_id.as_deref().is_none_or(|id| this.session.metadata(id).is_none() || this.session.is_disconnected(id))
-                    || matches!(&service, nyaterm_files::file_browser::FileBrowserService::Adb(service) if service.control.is_cancelled()) {
+                    || matches!(&service, nyaterm_files::file_browser::FileBrowserService::Adb(service) if service.control.is_cancelled())
+            || matches!(&service, nyaterm_files::file_browser::FileBrowserService::Hdc(service) if service.control.is_cancelled()) {
                     this.report_transfer_entry_error("download", service.kind(), &FileTransferEntryError::Unavailable.into(), cx);
                     return;
                 }
@@ -724,6 +725,7 @@ impl NyaTermApp {
         if session_id.as_deref().is_some_and(|id| {
             self.session.metadata(id).is_none() || self.session.is_disconnected(id)
         }) || matches!(&service, nyaterm_files::file_browser::FileBrowserService::Adb(service) if service.control.is_cancelled())
+            || matches!(&service, nyaterm_files::file_browser::FileBrowserService::Hdc(service) if service.control.is_cancelled())
         {
             self.report_transfer_entry_error(
                 "upload",

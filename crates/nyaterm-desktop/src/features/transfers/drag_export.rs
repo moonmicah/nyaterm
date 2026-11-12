@@ -255,6 +255,9 @@ impl TransferDragExportService {
                         lifetime.register_cleanup(control, cleanup);
                         ReadSource::Adb(source)
                     }
+                    // Dragging out of an hdc device is not implemented: opening the
+                    // promise reports a stable error instead of an empty file.
+                    WeakFileBrowserService::Hdc(_) => ReadSource::Unavailable,
                 },
                 _lifetime: lifetime,
             }),
@@ -327,6 +330,7 @@ impl RemoteTreeProvider {
 enum ReadSource {
     Sftp(SftpReadSource),
     Adb(AdbReadSource),
+    Unavailable,
 }
 struct RemoteProvider {
     source: ReadSource,
@@ -337,12 +341,17 @@ impl VirtualFileProvider for RemoteProvider {
         match &self.source {
             ReadSource::Sftp(source) => Ok(Box::new(RemoteStream(source.open()?))),
             ReadSource::Adb(source) => Ok(Box::new(AndroidStream(source.open()?))),
+            ReadSource::Unavailable => Err(std::io::Error::new(
+                std::io::ErrorKind::Unsupported,
+                "dragging files out of a HarmonyOS device is unavailable",
+            )),
         }
     }
     fn cancel(&self) {
         match &self.source {
             ReadSource::Sftp(source) => source.cancel(),
             ReadSource::Adb(source) => source.cancel(),
+            ReadSource::Unavailable => {}
         }
     }
 }

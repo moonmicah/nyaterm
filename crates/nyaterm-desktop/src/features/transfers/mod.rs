@@ -187,6 +187,14 @@ impl NyaTermApp {
                 .ok_or_else(|| anyhow::Error::new(nyaterm_android::error::AdbError::Offline))
                 .and_then(|config| self.android.file_service(&config.device_key))
                 .map(FileBrowserService::Adb),
+            Some(nyaterm_files::file_browser::FileBrowserBackendKind::Hdc) => {
+                let connection = self
+                    .connection_id_for_session(session_id)
+                    .ok_or_else(|| anyhow::Error::new(nyaterm_harmony::error::HdcError::Offline))?;
+                self.harmony
+                    .file_service(&connection)
+                    .map(FileBrowserService::Hdc)
+            }
             Some(nyaterm_files::file_browser::FileBrowserBackendKind::Local) => {
                 Ok(FileBrowserService::local())
             }

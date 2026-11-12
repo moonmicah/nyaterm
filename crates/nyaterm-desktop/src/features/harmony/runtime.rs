@@ -151,6 +151,12 @@ impl NyaTermApp {
         cx: &mut Context<Self>,
     ) {
         let device_key = config.device_key.clone();
+        // The same hdc binding serves the terminal and the file browser, so the
+        // pane can open without a second probe of the device.
+        self.harmony.register_files(
+            &device_key,
+            std::sync::Arc::new(nyaterm_files::hdc::HdcFileService::new(&config.binding)),
+        );
         self.begin_background_session_start(
             t!("harmony.shellTitle", name = config.name).into_owned(),
             SessionLaunchConfig::HdcShell(config),

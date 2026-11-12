@@ -488,6 +488,7 @@ impl SessionFeatureState {
             SessionKind::AdbShell | SessionKind::AdbFiles | SessionKind::AdbScreen => {
                 Some(FileBrowserBackendKind::Adb)
             }
+            SessionKind::HdcShell => Some(FileBrowserBackendKind::Hdc),
             SessionKind::LocalPty => Some(FileBrowserBackendKind::Local),
             SessionKind::Ssh => self
                 .metadata(session_id)

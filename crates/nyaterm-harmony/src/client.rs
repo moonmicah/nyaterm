@@ -72,12 +72,36 @@ impl HdcClient {
     /// One-shot shell command. hdc does not propagate the remote exit status,
     /// so success is "hdc completed"; callers verify content themselves.
     pub fn shell_capture(&self, connect_key: &str, command: &str) -> HdcResult<Vec<u8>> {
-        let output = run_bounded(
+        Ok(self.shell_capture_output(connect_key, command)?.stdout)
+    }
+
+    /// Both pipes of a one-shot shell command. Callers that need to tell a
+    /// missing file from an empty listing inspect `stderr` themselves.
+    pub fn shell_capture_output(
+        &self,
+        connect_key: &str,
+        command: &str,
+    ) -> HdcResult<HdcShellOutput> {
+        self.shell_capture_output_with_cancel(connect_key, command, &|| false)
+    }
+
+    pub fn shell_capture_output_with_cancel(
+        &self,
+        connect_key: &str,
+        command: &str,
+        cancelled: &dyn Fn() -> bool,
+    ) -> HdcResult<HdcShellOutput> {
+        let output = run_bounded_with(
             self.target_command(connect_key, &["shell", command]),
             SHELL_CAPTURE_TIMEOUT,
+            cancelled,
         )?;
         require_success(&output)?;
-        Ok(output.stdout)
+        Ok(HdcShellOutput {
+            stdout: output.stdout,
+            stderr: output.stderr,
+            status: output.status,
+        })
     }
 
     /// Cheap lease check: an unreachable key fails quickly with a nonzero exit.
@@ -87,16 +111,36 @@ impl HdcClient {
     }
 
     pub fn file_send(&self, connect_key: &str, local: &Path, remote: &str) -> HdcResult<()> {
+        self.file_send_with_cancel(connect_key, local, remote, &|| false)
+    }
+
+    pub fn file_send_with_cancel(
+        &self,
+        connect_key: &str,
+        local: &Path,
+        remote: &str,
+        cancelled: &dyn Fn() -> bool,
+    ) -> HdcResult<()> {
         let mut command = self.target_command(connect_key, &["file", "send"]);
         command.arg(local).arg(remote);
-        let output = run_bounded(command, FILE_TRANSFER_TIMEOUT)?;
+        let output = run_bounded_with(command, FILE_TRANSFER_TIMEOUT, cancelled)?;
         require_success(&output)
     }
 
     pub fn file_recv(&self, connect_key: &str, remote: &str, local: &Path) -> HdcResult<()> {
+        self.file_recv_with_cancel(connect_key, remote, local, &|| false)
+    }
+
+    pub fn file_recv_with_cancel(
+        &self,
+        connect_key: &str,
+        remote: &str,
+        local: &Path,
+        cancelled: &dyn Fn() -> bool,
+    ) -> HdcResult<()> {
         let mut command = self.target_command(connect_key, &["file", "recv"]);
         command.arg(remote).arg(local);
-        let output = run_bounded(command, FILE_TRANSFER_TIMEOUT)?;
+        let output = run_bounded_with(command, FILE_TRANSFER_TIMEOUT, cancelled)?;
         require_success(&output)
     }
 
@@ -134,9 +178,26 @@ fn require_success(output: &HdcOutput) -> HdcResult<()> {
 
 struct HdcOutput {
     stdout: Vec<u8>,
-    #[allow(dead_code)]
     stderr: Vec<u8>,
     status: Option<i32>,
+}
+
+/// Both pipes of a one-shot `hdc shell` invocation.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct HdcShellOutput {
+    pub stdout: Vec<u8>,
+    pub stderr: Vec<u8>,
+    pub status: Option<i32>,
+}
+
+impl HdcShellOutput {
+    pub fn stdout_text(&self) -> String {
+        String::from_utf8_lossy(&self.stdout).into_owned()
+    }
+
+    pub fn stderr_text(&self) -> String {
+        String::from_utf8_lossy(&self.stderr).into_owned()
+    }
 }
 
 impl HdcOutput {
@@ -153,6 +214,22 @@ impl HdcOutput {
 /// cap is drained but discarded. Killing an hdc child is always safe: the
 /// server survives, only the command is abandoned.
 fn run_bounded(mut command: Command, timeout: Duration) -> HdcResult<HdcOutput> {
+    run_bounded_with_impl(&mut command, timeout, &|| false)
+}
+
+fn run_bounded_with(
+    mut command: Command,
+    timeout: Duration,
+    cancelled: &dyn Fn() -> bool,
+) -> HdcResult<HdcOutput> {
+    run_bounded_with_impl(&mut command, timeout, cancelled)
+}
+
+fn run_bounded_with_impl(
+    command: &mut Command,
+    timeout: Duration,
+    cancelled: &dyn Fn() -> bool,
+) -> HdcResult<HdcOutput> {
     let mut child = command
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -166,9 +243,16 @@ fn run_bounded(mut command: Command, timeout: Duration) -> HdcResult<HdcOutput> 
     let status = loop {
         match child.try_wait()? {
             Some(status) => break status,
+            None if cancelled() => {
+                let _ = child.kill();
+                let _ = child.wait();
+                discard_workers(&mut stdout_worker, &mut stderr_worker);
+                return Err(HdcError::Cancelled);
+            }
             None if Instant::now() >= deadline => {
                 let _ = child.kill();
                 let _ = child.wait();
+                discard_workers(&mut stdout_worker, &mut stderr_worker);
                 return Err(HdcError::Timeout);
             }
             None => std::thread::sleep(Duration::from_millis(15)),
@@ -252,6 +336,13 @@ fn join_with_deadline(worker: &mut CaptureWorker, grace: Duration) -> Vec<u8> {
         worker.finish();
     }
     std::mem::take(&mut worker.result)
+}
+
+/// Abandoned commands still close their pipes; collect the workers so a killed
+/// transfer does not leave detached readers behind.
+fn discard_workers(stdout: &mut CaptureWorker, stderr: &mut CaptureWorker) {
+    let _ = join_with_deadline(stdout, Duration::from_millis(200));
+    let _ = join_with_deadline(stderr, Duration::from_millis(200));
 }
 
 /// Bounded child reaping shared with terminal-session teardown.

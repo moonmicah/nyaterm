@@ -45,12 +45,13 @@ impl CopyProgress {
         callback: impl FnMut(SftpTransferProgress) + Send + 'static,
     ) -> Self {
         let remote_path = match destination {
-            FileTransferEndpoint::Remote { path, .. } | FileTransferEndpoint::Adb { path, .. } => {
-                path.display_path.clone()
-            }
+            FileTransferEndpoint::Remote { path, .. }
+            | FileTransferEndpoint::Adb { path, .. }
+            | FileTransferEndpoint::Hdc { path, .. } => path.display_path.clone(),
             FileTransferEndpoint::Local(_) => match source {
                 FileTransferEndpoint::Remote { path, .. }
-                | FileTransferEndpoint::Adb { path, .. } => path.display_path.clone(),
+                | FileTransferEndpoint::Adb { path, .. }
+                | FileTransferEndpoint::Hdc { path, .. } => path.display_path.clone(),
                 FileTransferEndpoint::Local(path) => path.to_string_lossy().into_owned(),
             },
         };
@@ -120,6 +121,29 @@ impl CopyProgress {
                     if properties.file_type == SftpFileType::Directory {
                         for entry in service.list_dir_path_with_control(&path, control)? {
                             pending.push(FileTransferEndpoint::Adb {
+                                service: service.clone(),
+                                path: entry.remote_path(),
+                            });
+                        }
+                    } else {
+                        bytes = bytes
+                            .zip(properties.size)
+                            .and_then(|(a, b)| a.checked_add(b));
+                    }
+                }
+                FileTransferEndpoint::Hdc { service, path } => {
+                    let properties = service.remote_file_properties(&path)?;
+                    anyhow::ensure!(
+                        matches!(
+                            properties.file_type,
+                            SftpFileType::File | SftpFileType::Directory
+                        ),
+                        crate::file_browser::FileTransferEntryError::UnsupportedFileType
+                    );
+                    if properties.file_type == SftpFileType::Directory {
+                        for entry in service.list_dir_path(&path)? {
+                            control.wait_if_paused_blocking()?;
+                            pending.push(FileTransferEndpoint::Hdc {
                                 service: service.clone(),
                                 path: entry.remote_path(),
                             });

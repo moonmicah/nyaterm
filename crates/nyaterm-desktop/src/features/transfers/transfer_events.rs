@@ -385,7 +385,10 @@ impl NyaTermApp {
                     .android
                     .key_for_file_service(&service)
                     .map(crate::features::file_manager::PaneEndpoint::Adb),
-                Some(nyaterm_files::file_browser::WeakFileBrowserService::Remote(_)) => self
+                Some(
+                    nyaterm_files::file_browser::WeakFileBrowserService::Remote(_)
+                    | nyaterm_files::file_browser::WeakFileBrowserService::Hdc(_),
+                ) => self
                     .transfer
                     .transfer_job(&event.id)
                     .and_then(|job| job.session_id.clone())

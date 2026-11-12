@@ -102,6 +102,9 @@ impl NyaTermApp {
                         matches!(
                             cause.downcast_ref::<nyaterm_android::error::AdbError>(),
                             Some(nyaterm_android::error::AdbError::FileMissing)
+                        ) || matches!(
+                            cause.downcast_ref::<nyaterm_harmony::error::HdcError>(),
+                            Some(nyaterm_harmony::error::HdcError::FileMissing)
                         ) || cause
                             .downcast_ref::<std::io::Error>()
                             .is_some_and(|error| error.kind() == std::io::ErrorKind::NotFound)

@@ -1303,6 +1303,10 @@ pub enum FileTransferEndpoint {
         service: Arc<crate::adb::AdbFileService>,
         path: RemoteFilePath,
     },
+    Hdc {
+        service: Arc<crate::hdc::HdcFileService>,
+        path: RemoteFilePath,
+    },
     Remote {
         service: Arc<RemoteFileService>,
         path: RemoteFilePath,
@@ -1342,6 +1346,11 @@ impl FileCopyRequest {
         {
             return crate::adb::copy::execute(self, progress).map_err(crate::adb::file_error);
         }
+        if matches!(self.source, FileTransferEndpoint::Hdc { .. })
+            || matches!(self.destination, FileTransferEndpoint::Hdc { .. })
+        {
+            return crate::hdc::execute_copy(self, progress).map_err(crate::hdc::file_error);
+        }
         let browser_endpoint = |endpoint: &FileTransferEndpoint| match endpoint {
             FileTransferEndpoint::Local(path) => (
                 crate::file_browser::FileBrowserService::local(),
@@ -1353,6 +1362,10 @@ impl FileCopyRequest {
             ),
             FileTransferEndpoint::Adb { service, path } => (
                 crate::file_browser::FileBrowserService::Adb(service.clone()),
+                path.clone(),
+            ),
+            FileTransferEndpoint::Hdc { service, path } => (
+                crate::file_browser::FileBrowserService::Hdc(service.clone()),
                 path.clone(),
             ),
         };
@@ -1402,6 +1415,9 @@ impl FileCopyRequest {
         match (self.source, self.destination) {
             (FileTransferEndpoint::Adb { .. }, _) | (_, FileTransferEndpoint::Adb { .. }) => {
                 unreachable!("Android copies use the isolated copy adapter")
+            }
+            (FileTransferEndpoint::Hdc { .. }, _) | (_, FileTransferEndpoint::Hdc { .. }) => {
+                unreachable!("HarmonyOS copies use the isolated copy adapter")
             }
             (FileTransferEndpoint::Local(source), FileTransferEndpoint::Local(destination)) => {
                 let Some(destination) = resolve_copy_local_target(

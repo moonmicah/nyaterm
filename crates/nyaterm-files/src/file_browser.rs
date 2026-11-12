@@ -22,6 +22,7 @@ use std::sync::{Arc, Weak};
 pub enum WeakFileBrowserService {
     Remote(Weak<RemoteFileService>),
     Adb(Weak<crate::adb::AdbFileService>),
+    Hdc(Weak<crate::hdc::HdcFileService>),
 }
 
 impl std::fmt::Debug for WeakFileBrowserService {
@@ -44,6 +45,7 @@ impl WeakFileBrowserService {
         match self {
             Self::Remote(_) => FileBrowserBackendKind::Remote,
             Self::Adb(_) => FileBrowserBackendKind::Adb,
+            Self::Hdc(_) => FileBrowserBackendKind::Hdc,
         }
     }
     pub fn upgrade(&self) -> Option<FileBrowserService> {
@@ -53,6 +55,10 @@ impl WeakFileBrowserService {
                 .upgrade()
                 .filter(|s| !s.control.is_cancelled() && s.runtime.is_valid())
                 .map(FileBrowserService::Adb),
+            Self::Hdc(service) => service
+                .upgrade()
+                .filter(|s| !s.control.is_cancelled() && s.is_valid())
+                .map(FileBrowserService::Hdc),
         }
     }
 }
@@ -62,6 +68,7 @@ pub enum FileBrowserBackendKind {
     Local,
     Remote,
     Adb,
+    Hdc,
 }
 
 /// Entry failures have stable codes and never retain paths or picker diagnostics.
@@ -140,6 +147,7 @@ pub enum FileBrowserService {
     Local(LocalFileService),
     Remote(Arc<RemoteFileService>),
     Adb(Arc<crate::adb::AdbFileService>),
+    Hdc(Arc<crate::hdc::HdcFileService>),
 }
 
 impl std::fmt::Debug for FileBrowserService {
@@ -168,6 +176,7 @@ impl FileBrowserService {
             Self::Local(_) => None,
             Self::Remote(service) => Some(WeakFileBrowserService::Remote(Arc::downgrade(service))),
             Self::Adb(service) => Some(WeakFileBrowserService::Adb(Arc::downgrade(service))),
+            Self::Hdc(service) => Some(WeakFileBrowserService::Hdc(Arc::downgrade(service))),
         }
     }
     pub fn download_remote_path_with_progress_and_path_options(
@@ -258,7 +267,7 @@ impl FileBrowserService {
                 self.kind(),
                 &path.display_path,
             ))),
-            Self::Remote(_) | Self::Adb(_) => path.parent(),
+            Self::Remote(_) | Self::Adb(_) | Self::Hdc(_) => path.parent(),
         }
     }
 
@@ -281,6 +290,9 @@ impl FileBrowserService {
             Self::Adb(service) => service
                 .child_path(directory, name)
                 .map_err(crate::adb::file_error),
+            Self::Hdc(service) => service
+                .child_path(directory, name)
+                .map_err(crate::hdc::file_error),
         }
     }
 
@@ -352,6 +364,9 @@ impl FileBrowserService {
             (Self::Adb(origin), Self::Adb(target)) => origin
                 .validate_copy_destination(source, target, destination, directory)
                 .map_err(crate::adb::file_error)?,
+            (Self::Hdc(origin), Self::Hdc(target)) => origin
+                .validate_copy_destination(source, target, destination, directory)
+                .map_err(crate::hdc::file_error)?,
             _ => {}
         }
         Ok(())
@@ -370,6 +385,9 @@ impl FileBrowserService {
             Self::Adb(service) => service
                 .create_dir_remote_path(path, mode)
                 .map_err(crate::adb::file_error),
+            Self::Hdc(service) => service
+                .create_dir_remote_path(path, mode)
+                .map_err(crate::hdc::file_error),
         }
     }
 
@@ -386,6 +404,9 @@ impl FileBrowserService {
             Self::Adb(service) => service
                 .create_file_remote_path(path, mode)
                 .map_err(crate::adb::file_error),
+            Self::Hdc(service) => service
+                .create_file_remote_path(path, mode)
+                .map_err(crate::hdc::file_error),
         }
     }
 
@@ -402,6 +423,7 @@ impl FileBrowserService {
             Self::Local(_) => FileBrowserBackendKind::Local,
             Self::Remote(_) => FileBrowserBackendKind::Remote,
             Self::Adb(_) => FileBrowserBackendKind::Adb,
+            Self::Hdc(_) => FileBrowserBackendKind::Hdc,
         }
     }
 
@@ -415,6 +437,12 @@ impl FileBrowserService {
                 edit_attributes: false,
                 direct_external_open: false,
             },
+            Self::Hdc(_) => FileBrowserCapabilities {
+                ordinary_transfer: true,
+                create_symlink: false,
+                edit_attributes: false,
+                direct_external_open: false,
+            },
         }
     }
 
@@ -423,6 +451,8 @@ impl FileBrowserService {
             Self::Local(service) => service.home_dir(),
             Self::Remote(service) => service.home_dir(),
             Self::Adb(_) => Ok("/sdcard/".into()),
+            // HarmonyOS exposes the user storage root through the media directory.
+            Self::Hdc(_) => Ok("/storage/media/100/local/files/".into()),
         }
     }
 
@@ -433,6 +463,9 @@ impl FileBrowserService {
             Self::Adb(service) => service
                 .list_dir_path(&RemoteFilePath::new(path.as_ref()))
                 .map_err(crate::adb::file_error),
+            Self::Hdc(service) => service
+                .list_dir_path(&RemoteFilePath::new(path.as_ref()))
+                .map_err(crate::hdc::file_error),
         }
     }
 
@@ -441,6 +474,7 @@ impl FileBrowserService {
             Self::Local(service) => service.list_dir(resolve_local_path(&path.display_path)),
             Self::Remote(service) => service.list_dir_path(path),
             Self::Adb(service) => service.list_dir_path(path).map_err(crate::adb::file_error),
+            Self::Hdc(service) => service.list_dir_path(path).map_err(crate::hdc::file_error),
         }
     }
 
@@ -451,6 +485,9 @@ impl FileBrowserService {
             Self::Adb(service) => service
                 .create_dir_remote_path(&RemoteFilePath::new(path.as_ref()), mode)
                 .map_err(crate::adb::file_error),
+            Self::Hdc(service) => service
+                .create_dir_remote_path(&RemoteFilePath::new(path.as_ref()), mode)
+                .map_err(crate::hdc::file_error),
         }
     }
 
@@ -461,6 +498,9 @@ impl FileBrowserService {
             Self::Adb(service) => service
                 .create_file_remote_path(&RemoteFilePath::new(path.as_ref()), mode)
                 .map_err(crate::adb::file_error),
+            Self::Hdc(service) => service
+                .create_file_remote_path(&RemoteFilePath::new(path.as_ref()), mode)
+                .map_err(crate::hdc::file_error),
         }
     }
 
@@ -470,7 +510,7 @@ impl FileBrowserService {
         target_path: impl AsRef<str>,
     ) -> anyhow::Result<()> {
         match self {
-            Self::Adb(_) | Self::Local(_) => {
+            Self::Adb(_) | Self::Hdc(_) | Self::Local(_) => {
                 bail!("creating symbolic links is unavailable for this backend")
             }
             Self::Remote(service) => service.create_symlink_path(link_path, target_path),
@@ -484,6 +524,9 @@ impl FileBrowserService {
             Self::Adb(service) => service
                 .delete_remote_path(path)
                 .map_err(crate::adb::file_error),
+            Self::Hdc(service) => service
+                .delete_remote_path(path)
+                .map_err(crate::hdc::file_error),
         }
     }
 
@@ -501,6 +544,9 @@ impl FileBrowserService {
             Self::Adb(service) => service
                 .rename_remote_paths(old_path, new_path)
                 .map_err(crate::adb::file_error),
+            Self::Hdc(service) => service
+                .rename_remote_paths(old_path, new_path)
+                .map_err(crate::hdc::file_error),
         }
     }
 
@@ -519,6 +565,9 @@ impl FileBrowserService {
             Self::Adb(service) => service
                 .rename_remote_paths_no_replace(source, destination)
                 .map_err(crate::adb::file_error),
+            Self::Hdc(service) => service
+                .rename_remote_paths_no_replace(source, destination)
+                .map_err(crate::hdc::file_error),
         }
     }
 
@@ -532,6 +581,9 @@ impl FileBrowserService {
             Self::Adb(service) => service
                 .remote_file_properties(path)
                 .map_err(crate::adb::file_error),
+            Self::Hdc(service) => service
+                .remote_file_properties(path)
+                .map_err(crate::hdc::file_error),
         }
     }
 
@@ -541,7 +593,7 @@ impl FileBrowserService {
         update: SftpAttributeUpdate,
     ) -> anyhow::Result<()> {
         match self {
-            Self::Adb(_) | Self::Local(_) => {
+            Self::Adb(_) | Self::Hdc(_) | Self::Local(_) => {
                 bail!("editing attributes is unavailable for this backend")
             }
             Self::Remote(service) => service.update_remote_path_attributes(path, update),
@@ -561,6 +613,9 @@ impl FileBrowserService {
             Self::Adb(service) => service
                 .read_text_file_path(path, max_bytes)
                 .map_err(crate::adb::file_error),
+            Self::Hdc(service) => service
+                .read_text_file_path(path, max_bytes)
+                .map_err(crate::hdc::file_error),
         }
     }
 
@@ -577,6 +632,9 @@ impl FileBrowserService {
             Self::Adb(service) => service
                 .read_text_document_path(path, max_bytes)
                 .map_err(crate::adb::file_error),
+            Self::Hdc(service) => service
+                .read_text_document_path(path, max_bytes)
+                .map_err(crate::hdc::file_error),
         }
     }
 
@@ -600,6 +658,9 @@ impl FileBrowserService {
             Self::Adb(service) => service
                 .write_text_document_path(path, content, expected_revision, force)
                 .map_err(crate::adb::file_error),
+            Self::Hdc(service) => service
+                .write_text_document_path(path, content, expected_revision, force)
+                .map_err(crate::hdc::file_error),
         }
     }
 
@@ -616,6 +677,9 @@ impl FileBrowserService {
             Self::Adb(service) => service
                 .read_file_bytes_path(path, max_bytes)
                 .map_err(crate::adb::file_error),
+            Self::Hdc(service) => service
+                .read_file_bytes_path(path, max_bytes)
+                .map_err(crate::hdc::file_error),
         }
     }
 
@@ -623,6 +687,10 @@ impl FileBrowserService {
         match self {
             Self::Local(_) => FileTransferEndpoint::Local(resolve_local_path(&path.display_path)),
             Self::Adb(service) => FileTransferEndpoint::Adb {
+                service: service.clone(),
+                path: path.clone(),
+            },
+            Self::Hdc(service) => FileTransferEndpoint::Hdc {
                 service: service.clone(),
                 path: path.clone(),
             },
@@ -639,7 +707,7 @@ impl FileBrowserService {
 
     pub fn remote_service(&self) -> Option<Arc<RemoteFileService>> {
         match self {
-            Self::Adb(_) | Self::Local(_) => None,
+            Self::Adb(_) | Self::Hdc(_) | Self::Local(_) => None,
             Self::Remote(service) => Some(service.clone()),
         }
     }
@@ -662,7 +730,9 @@ pub fn file_browser_name(kind: FileBrowserBackendKind, path: &str) -> String {
             .file_name()
             .map(|name| name.to_string_lossy().into_owned())
             .unwrap_or_else(|| path.to_string()),
-        FileBrowserBackendKind::Remote | FileBrowserBackendKind::Adb => path
+        FileBrowserBackendKind::Remote
+        | FileBrowserBackendKind::Adb
+        | FileBrowserBackendKind::Hdc => path
             .trim_end_matches('/')
             .rsplit('/')
             .next()
@@ -678,7 +748,9 @@ pub fn file_browser_parent(kind: FileBrowserBackendKind, path: &str) -> String {
             .map(|parent| parent.to_string_lossy().into_owned())
             .filter(|parent| !parent.is_empty())
             .unwrap_or_else(|| path.to_string()),
-        FileBrowserBackendKind::Remote | FileBrowserBackendKind::Adb => {
+        FileBrowserBackendKind::Remote
+        | FileBrowserBackendKind::Adb
+        | FileBrowserBackendKind::Hdc => {
             let path = path.trim_end_matches('/');
             match path.rfind('/') {
                 Some(0) => "/".to_string(),
@@ -694,7 +766,9 @@ pub fn file_browser_join(kind: FileBrowserBackendKind, parent: &str, child: &str
         FileBrowserBackendKind::Local => {
             Path::new(parent).join(child).to_string_lossy().into_owned()
         }
-        FileBrowserBackendKind::Remote | FileBrowserBackendKind::Adb => {
+        FileBrowserBackendKind::Remote
+        | FileBrowserBackendKind::Adb
+        | FileBrowserBackendKind::Hdc => {
             let absolute = parent.starts_with('/');
             let parent = parent.trim_end_matches('/');
             match parent {
@@ -708,9 +782,9 @@ pub fn file_browser_join(kind: FileBrowserBackendKind, parent: &str, child: &str
 
 pub fn file_browser_root(kind: FileBrowserBackendKind, path: &str) -> String {
     match kind {
-        FileBrowserBackendKind::Remote | FileBrowserBackendKind::Adb => {
-            if path.starts_with('/') { "/" } else { "." }.to_string()
-        }
+        FileBrowserBackendKind::Remote
+        | FileBrowserBackendKind::Adb
+        | FileBrowserBackendKind::Hdc => if path.starts_with('/') { "/" } else { "." }.to_string(),
         FileBrowserBackendKind::Local => {
             let path = Path::new(path);
             path.ancestors()
@@ -724,13 +798,13 @@ pub fn file_browser_root(kind: FileBrowserBackendKind, path: &str) -> String {
 
 pub fn file_browser_identity(kind: FileBrowserBackendKind, path: &str) -> String {
     match kind {
-        FileBrowserBackendKind::Remote | FileBrowserBackendKind::Adb => {
-            match posix_path_parts(path) {
-                Some(parts) if parts.is_empty() => "/".to_string(),
-                Some(parts) => format!("/{}", parts.join("/")),
-                None => path.to_string(),
-            }
-        }
+        FileBrowserBackendKind::Remote
+        | FileBrowserBackendKind::Adb
+        | FileBrowserBackendKind::Hdc => match posix_path_parts(path) {
+            Some(parts) if parts.is_empty() => "/".to_string(),
+            Some(parts) => format!("/{}", parts.join("/")),
+            None => path.to_string(),
+        },
         FileBrowserBackendKind::Local if cfg!(windows) => {
             let path = path.replace('/', "\\");
             wsl_unc_identity(&path).unwrap_or_else(|| path.to_lowercase())
@@ -928,7 +1002,9 @@ pub fn file_browser_copy_destination_invalid(
         return false;
     }
     match kind {
-        FileBrowserBackendKind::Remote | FileBrowserBackendKind::Adb => {
+        FileBrowserBackendKind::Remote
+        | FileBrowserBackendKind::Adb
+        | FileBrowserBackendKind::Hdc => {
             let Some(source_parts) = posix_path_parts(source) else {
                 return true;
             };
