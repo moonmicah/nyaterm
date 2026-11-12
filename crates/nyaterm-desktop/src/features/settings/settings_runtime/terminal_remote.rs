@@ -14,6 +14,15 @@ impl NyaTermApp {
         self.save_general_settings(cx);
         cx.notify();
     }
+    pub(in crate::features) fn apply_harmony_hdc_path(
+        &mut self,
+        text: String,
+        cx: &mut Context<Self>,
+    ) {
+        self.settings.set_harmony_hdc_path(text);
+        self.save_general_settings(cx);
+        cx.notify();
+    }
     /// Apply an edit from the X11 display box.
     pub(in crate::features) fn apply_terminal_x11_display(
         &mut self,

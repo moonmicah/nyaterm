@@ -4531,5 +4531,35 @@
     "tmuxCommandFailed": "tmux 指令失敗",
     "details": "詳細資訊（%{count}）",
     "repeated": "發生次數：%{count}"
+  },
+  "harmony": {
+    "connecting": "正在連線 HarmonyOS · %{name}",
+    "shellTitle": "%{name} · 終端機",
+    "hdcExecutable": "HDC 可執行檔",
+    "hdcPathHint": "留空則從 PATH 或 DevEco SDK 自動尋找 hdc；指定的路徑必須是有效可執行檔。",
+    "hdcAutoDetect": "自動偵測 hdc",
+    "errors": {
+      "deviceRequired": "請透過 USB 連接 HarmonyOS 裝置或填寫連線識別碼",
+      "hostInvalid": "請輸入有效的 HarmonyOS 主機位址",
+      "directoryInvalid": "請輸入不含空字元的 HarmonyOS 絕對路徑",
+      "fileMissing": "HarmonyOS 檔案不存在",
+      "io": "HDC 讀寫錯誤",
+      "executableMissing": "找不到 hdc，請安裝或在設定中指定路徑",
+      "offline": "HarmonyOS 裝置離線或找不到",
+      "rejected": "hdc 拒絕了請求",
+      "protocol": "hdc 傳回無法辨識的結果",
+      "cancelled": "HarmonyOS 操作已取消",
+      "timeout": "HarmonyOS 操作逾時",
+      "commandFailed": "hdc 指令失敗（結束碼 %{code}）",
+      "operationFailed": "HarmonyOS 操作失敗",
+      "shellInputFailed": "HarmonyOS 終端機輸入失敗",
+      "disconnected": "HarmonyOS 裝置已中斷連線",
+      "shellExit": "HarmonyOS 終端機已結束（結束碼 %{code}）"
+    },
+    "usbDevice": "USB 裝置",
+    "connectKey": "連線識別碼",
+    "shell": "HarmonyOS 終端機",
+    "fileDropUnsupported": "HarmonyOS 工作階段暫不支援拖入檔案",
+    "connectionUnavailable": "已儲存的 HarmonyOS 連線無法使用"
   }
 }

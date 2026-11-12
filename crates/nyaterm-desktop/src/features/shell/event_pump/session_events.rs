@@ -328,16 +328,19 @@ impl NyaTermApp {
                             &mut pending_frame_outputs,
                             &mut drain_timings,
                         );
-                        let reason = if self.session.metadata(&session_id).is_some_and(|metadata| {
-                            matches!(
-                                metadata.launch_config,
-                                crate::models::SessionLaunchConfig::AdbShell(_)
-                            )
-                        }) {
-                            crate::features::android::labels::shell_event_message(&reason)
-                        } else {
-                            reason
-                        };
+                        let reason = self
+                            .session
+                            .metadata(&session_id)
+                            .map(|metadata| match metadata.launch_config {
+                                crate::models::SessionLaunchConfig::AdbShell(_) => {
+                                    crate::features::android::labels::shell_event_message(&reason)
+                                }
+                                crate::models::SessionLaunchConfig::HdcShell(_) => {
+                                    crate::features::harmony::labels::shell_event_message(&reason)
+                                }
+                                _ => reason.clone(),
+                            })
+                            .unwrap_or(reason);
                         root_chrome_dirty |=
                             self.handle_session_exited_event(session_id, reason, cx);
                     }
@@ -369,17 +372,19 @@ impl NyaTermApp {
                             &mut pending_frame_outputs,
                             &mut drain_timings,
                         );
-                        let message =
-                            if self.session.metadata(&session_id).is_some_and(|metadata| {
-                                matches!(
-                                    metadata.launch_config,
-                                    crate::models::SessionLaunchConfig::AdbShell(_)
-                                )
-                            }) {
-                                crate::features::android::labels::shell_event_message(&message)
-                            } else {
-                                message
-                            };
+                        let message = self
+                            .session
+                            .metadata(&session_id)
+                            .map(|metadata| match metadata.launch_config {
+                                crate::models::SessionLaunchConfig::AdbShell(_) => {
+                                    crate::features::android::labels::shell_event_message(&message)
+                                }
+                                crate::models::SessionLaunchConfig::HdcShell(_) => {
+                                    crate::features::harmony::labels::shell_event_message(&message)
+                                }
+                                _ => message.clone(),
+                            })
+                            .unwrap_or(message);
                         root_chrome_dirty |=
                             self.handle_session_error_event(session_id, message, cx);
                     }

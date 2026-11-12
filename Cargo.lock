@@ -6980,6 +6980,7 @@ dependencies = [
  "nyaterm-cloud-storage",
  "nyaterm-core",
  "nyaterm-files",
+ "nyaterm-harmony",
  "nyaterm-mcp-host",
  "nyaterm-mcp-protocol",
  "nyaterm-otp",
@@ -7050,6 +7051,17 @@ dependencies = [
  "unicode-normalization",
  "uuid",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "nyaterm-harmony"
+version = "2.0.5"
+dependencies = [
+ "nyaterm-core",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.20",
 ]
 
 [[package]]
@@ -7325,6 +7337,7 @@ dependencies = [
  "md5",
  "nyaterm-android",
  "nyaterm-core",
+ "nyaterm-harmony",
  "nyaterm-terminal",
  "portable-pty",
  "rand 0.10.3",

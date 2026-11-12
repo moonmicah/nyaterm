@@ -430,7 +430,8 @@
       "idle_lock_minutes": "local",
       "has_master_password": "local",
       "keybindings": "conditional:keybinding",
-      "android_adb_path": "local"
+      "android_adb_path": "local",
+      "harmony_hdc_path": "local"
     }
   },
   "AiSettings": {

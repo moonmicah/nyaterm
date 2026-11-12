@@ -197,6 +197,7 @@ impl ConnectionStore {
                 false,
             ),
             android_adb_path: json_string(&value, &["android", "adb_path"], ""),
+            harmony_hdc_path: json_string(&value, &["harmony", "hdc_path"], ""),
             x11_display: json_string(&value, &["terminal", "x11_display"], ""),
             terminal_scrollback_lines: json_u32(&value, &["terminal", "scrollback_lines"], 5000)
                 .clamp(100, 100_000),
@@ -1637,6 +1638,11 @@ impl ConnectionStore {
             &mut value,
             &["android", "adb_path"],
             settings.android_adb_path.clone(),
+        );
+        set_nested_json_string(
+            &mut value,
+            &["harmony", "hdc_path"],
+            settings.harmony_hdc_path.clone(),
         );
         set_nested_json_value(
             &mut value,

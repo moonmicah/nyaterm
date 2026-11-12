@@ -1034,6 +1034,11 @@ impl NyaTermApp {
                 );
                 cx.notify();
             }
+            Some(SessionKind::HdcShell) => {
+                self.shell
+                    .set_status(rust_i18n::t!("harmony.fileDropUnsupported").into_owned());
+                cx.notify();
+            }
         }
     }
 

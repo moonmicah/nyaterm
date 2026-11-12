@@ -58,6 +58,12 @@ impl SettingsPanel {
                 Some(SharedString::from(rust_i18n::t!("android.adbPathHint"))),
                 self.existing_text_input_box("settings.android.adb-path", false),
             ))
+            .child(settings_form_row(
+                palette,
+                rust_i18n::t!("harmony.hdcExecutable"),
+                Some(SharedString::from(rust_i18n::t!("harmony.hdcPathHint"))),
+                self.existing_text_input_box("settings.harmony.hdc-path", false),
+            ))
             .child(settings_form_section(
                 palette,
                 None,

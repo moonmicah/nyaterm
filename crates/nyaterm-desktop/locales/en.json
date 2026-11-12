@@ -4531,5 +4531,35 @@
     "tmuxCommandFailed": "tmux command failed",
     "details": "Details (%{count})",
     "repeated": "Occurrences: %{count}"
+  },
+  "harmony": {
+    "connecting": "Connecting to HarmonyOS · %{name}",
+    "shellTitle": "%{name} · Terminal",
+    "hdcExecutable": "HDC executable",
+    "hdcPathHint": "Leave empty to detect hdc from PATH or the DevEco SDK; a custom path must point to a valid executable.",
+    "hdcAutoDetect": "Auto-detect hdc",
+    "errors": {
+      "deviceRequired": "Connect a HarmonyOS device over USB or enter its connect key",
+      "hostInvalid": "Enter a valid HarmonyOS host address",
+      "directoryInvalid": "Enter a HarmonyOS absolute path without NUL characters",
+      "fileMissing": "HarmonyOS file does not exist",
+      "io": "HDC I/O error",
+      "executableMissing": "hdc was not found; install it or set its path in settings",
+      "offline": "HarmonyOS device is offline or missing",
+      "rejected": "hdc rejected the request",
+      "protocol": "Unexpected hdc output",
+      "cancelled": "HarmonyOS operation cancelled",
+      "timeout": "HarmonyOS operation timed out",
+      "commandFailed": "hdc command failed (exit %{code})",
+      "operationFailed": "HarmonyOS operation failed",
+      "shellInputFailed": "HarmonyOS shell input failed",
+      "disconnected": "HarmonyOS device disconnected",
+      "shellExit": "The HarmonyOS shell exited (code %{code})"
+    },
+    "usbDevice": "USB device",
+    "connectKey": "Connect key",
+    "shell": "HarmonyOS Terminal",
+    "fileDropUnsupported": "File drop is not supported for HarmonyOS sessions yet",
+    "connectionUnavailable": "The saved HarmonyOS connection is unavailable"
   }
 }

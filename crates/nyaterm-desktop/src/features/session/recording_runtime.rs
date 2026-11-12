@@ -480,6 +480,13 @@ fn recording_launch_context(
             None,
             None,
         ),
+        SessionLaunchConfig::HdcShell(config) => (
+            config.name.clone(),
+            "hdc_shell".into(),
+            Some(config.device.connect_key()),
+            None,
+            None,
+        ),
         SessionLaunchConfig::Local(config) => {
             (config.name.clone(), "local".to_string(), None, None, None)
         }

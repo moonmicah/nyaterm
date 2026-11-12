@@ -291,6 +291,10 @@ fn protocol_selectors(kind: ConnectionKindTab) -> (&'static str, &'static str) {
             "connection-editor-adb-section",
             "connection-editor-adb-advanced",
         ),
+        ConnectionKindTab::Harmony => (
+            "connection-editor-harmony-section",
+            "connection-editor-harmony-advanced",
+        ),
         ConnectionKindTab::Ssh => (
             "connection-editor-ssh-section",
             "connection-editor-ssh-advanced",
@@ -333,6 +337,7 @@ fn editor(group_id: Option<&str>, pending_group_name: Option<&str>) -> Connectio
     ConnectionEditorState {
         defaults_mode: false,
         android_usb: false,
+        harmony_usb: false,
         android_screen: Default::default(),
         id: None,
         kind: ConnectionKindTab::Ssh,

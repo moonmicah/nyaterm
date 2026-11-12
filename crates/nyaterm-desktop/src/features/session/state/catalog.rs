@@ -82,6 +82,14 @@ pub(super) fn session_info_from_metadata(
             cols: config.cols,
             rows: config.rows,
         },
+        SessionLaunchConfig::HdcShell(config) => SessionInfo {
+            id: session_id.to_string(),
+            name: rust_i18n::t!("harmony.shellTitle", name = config.name).into_owned(),
+            kind: SessionKind::HdcShell,
+            working_dir: None,
+            cols: config.cols,
+            rows: config.rows,
+        },
         SessionLaunchConfig::Local(config) => SessionInfo {
             id: session_id.to_string(),
             name: config.name.clone(),
@@ -815,6 +823,7 @@ impl SessionFeatureState {
             SessionLaunchConfig::AdbShell(config)
             | SessionLaunchConfig::AdbFiles(config)
             | SessionLaunchConfig::AdbScreen(config) => Some(config.device.serial()),
+            SessionLaunchConfig::HdcShell(config) => Some(config.device.connect_key()),
             SessionLaunchConfig::Local(config) => {
                 let shell = config
                     .shell_path

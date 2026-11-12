@@ -4531,5 +4531,35 @@
     "tmuxCommandFailed": "tmux 명령이 실패했습니다",
     "details": "상세 정보 (%{count})",
     "repeated": "발생 횟수: %{count}"
+  },
+  "harmony": {
+    "connecting": "HarmonyOS에 연결 중 · %{name}",
+    "shellTitle": "%{name} · 터미널",
+    "hdcExecutable": "HDC 실행 파일",
+    "hdcPathHint": "비워 두면 PATH 또는 DevEco SDK에서 hdc를 자동으로 찾습니다. 직접 지정할 경우 유효한 실행 파일이어야 합니다.",
+    "hdcAutoDetect": "hdc 자동 감지",
+    "errors": {
+      "deviceRequired": "USB로 HarmonyOS 기기를 연결하거나 연결 키를 입력하세요",
+      "hostInvalid": "유효한 HarmonyOS 호스트 주소를 입력하세요",
+      "directoryInvalid": "NUL 문자가 없는 HarmonyOS 절대 경로를 입력하세요",
+      "fileMissing": "HarmonyOS 파일이 없습니다",
+      "io": "HDC 입출력 오류",
+      "executableMissing": "hdc를 찾을 수 없습니다. 설치하거나 설정에서 경로를 지정하세요",
+      "offline": "HarmonyOS 기기가 오프라인이거나 없습니다",
+      "rejected": "hdc가 요청을 거부했습니다",
+      "protocol": "hdc 출력을 해석할 수 없습니다",
+      "cancelled": "HarmonyOS 작업이 취소되었습니다",
+      "timeout": "HarmonyOS 작업 시간이 초과되었습니다",
+      "commandFailed": "hdc 명령 실패(종료 코드 %{code})",
+      "operationFailed": "HarmonyOS 작업 실패",
+      "shellInputFailed": "HarmonyOS 터미널 입력 실패",
+      "disconnected": "HarmonyOS 기기 연결이 끊어졌습니다",
+      "shellExit": "HarmonyOS 터미널이 종료되었습니다(코드 %{code})"
+    },
+    "usbDevice": "USB 기기",
+    "connectKey": "연결 키",
+    "shell": "HarmonyOS 터미널",
+    "fileDropUnsupported": "HarmonyOS 세션은 아직 파일 끌어오기를 지원하지 않습니다",
+    "connectionUnavailable": "저장된 HarmonyOS 연결을 사용할 수 없습니다"
   }
 }

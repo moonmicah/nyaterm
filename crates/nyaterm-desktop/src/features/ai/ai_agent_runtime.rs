@@ -251,6 +251,7 @@ impl NyaTermApp {
                 }
                 SessionKind::AdbFiles | SessionKind::AdbScreen => AiExecutionProfile::Disabled,
                 SessionKind::AdbShell
+                | SessionKind::HdcShell
                 | SessionKind::Serial
                 | SessionKind::Rdp
                 | SessionKind::Vnc => AiExecutionProfile::SendOnly,

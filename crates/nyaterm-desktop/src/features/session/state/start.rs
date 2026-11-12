@@ -300,6 +300,7 @@ impl SessionStartFeatureState {
                     }
                 }
             }
+            ConnectionType::Harmony { .. } => (SessionKind::HdcShell, AiExecutionProfile::SendOnly),
             ConnectionType::Rdp { .. } => (SessionKind::Rdp, AiExecutionProfile::Disabled),
             ConnectionType::Vnc { .. } => (SessionKind::Vnc, AiExecutionProfile::Disabled),
         };

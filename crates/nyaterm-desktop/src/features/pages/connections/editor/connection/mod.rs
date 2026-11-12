@@ -18,6 +18,7 @@ pub(in crate::features::pages::connections) use groups::ordered_connection_group
 use crate::models::ConnectionEditorFocusTarget;
 mod android;
 mod authentication;
+mod harmony;
 mod layout;
 mod local;
 pub(in crate::features) mod options;
@@ -707,6 +708,7 @@ impl NyaTermApp {
                 ConnectionKindTab::Rdp,
                 ConnectionKindTab::Vnc,
                 ConnectionKindTab::Adb,
+                ConnectionKindTab::Harmony,
             ]
             .into_iter()
             .map(|kind| {
@@ -1084,6 +1086,9 @@ impl NyaTermApp {
                     self.android.tracker.snapshot(),
                     cx,
                 ))
+            })
+            .when(editor.kind == ConnectionKindTab::Harmony, |this| {
+                this.child(harmony::section(section_context, cx))
             })
             .when(editor.kind == ConnectionKindTab::Local, |this| {
                 this.child(connection_editor_local_section(section_context, cx))

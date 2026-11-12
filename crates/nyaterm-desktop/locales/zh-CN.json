@@ -4531,5 +4531,35 @@
     "tmuxCommandFailed": "tmux 命令失败",
     "details": "详情（%{count}）",
     "repeated": "发生次数：%{count}"
+  },
+  "harmony": {
+    "connecting": "正在连接 HarmonyOS · %{name}",
+    "shellTitle": "%{name} · 终端",
+    "hdcExecutable": "HDC 可执行文件",
+    "hdcPathHint": "留空则从 PATH 或 DevEco SDK 自动查找 hdc；指定的路径必须是有效可执行文件。",
+    "hdcAutoDetect": "自动检测 hdc",
+    "errors": {
+      "deviceRequired": "请通过 USB 连接 HarmonyOS 设备或填写连接标识",
+      "hostInvalid": "请输入有效的 HarmonyOS 主机地址",
+      "directoryInvalid": "请输入不含空字符的 HarmonyOS 绝对路径",
+      "fileMissing": "HarmonyOS 文件不存在",
+      "io": "HDC 读写错误",
+      "executableMissing": "未找到 hdc，请安装或在设置中指定路径",
+      "offline": "HarmonyOS 设备离线或未找到",
+      "rejected": "hdc 拒绝了请求",
+      "protocol": "hdc 返回了无法识别的结果",
+      "cancelled": "HarmonyOS 操作已取消",
+      "timeout": "HarmonyOS 操作超时",
+      "commandFailed": "hdc 命令失败（退出码 %{code}）",
+      "operationFailed": "HarmonyOS 操作失败",
+      "shellInputFailed": "HarmonyOS 终端输入失败",
+      "disconnected": "HarmonyOS 设备已断开",
+      "shellExit": "HarmonyOS 终端已退出（退出码 %{code}）"
+    },
+    "usbDevice": "USB 设备",
+    "connectKey": "连接标识",
+    "shell": "HarmonyOS 终端",
+    "fileDropUnsupported": "HarmonyOS 会话暂不支持拖入文件",
+    "connectionUnavailable": "已保存的 HarmonyOS 连接不可用"
   }
 }

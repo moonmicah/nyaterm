@@ -4531,5 +4531,35 @@
     "tmuxCommandFailed": "tmux コマンドが失敗しました",
     "details": "詳細（%{count}）",
     "repeated": "発生回数：%{count}"
+  },
+  "harmony": {
+    "connecting": "HarmonyOS に接続中 · %{name}",
+    "shellTitle": "%{name} · ターミナル",
+    "hdcExecutable": "HDC 実行ファイル",
+    "hdcPathHint": "空欄の場合は PATH または DevEco SDK から hdc を自動検出します。指定する場合は有効な実行ファイルを指定してください。",
+    "hdcAutoDetect": "hdc を自動検出",
+    "errors": {
+      "deviceRequired": "USB で HarmonyOS デバイスを接続するか、接続キーを入力してください",
+      "hostInvalid": "有効な HarmonyOS ホストアドレスを入力してください",
+      "directoryInvalid": "NUL 文字を含まない HarmonyOS の絶対パスを入力してください",
+      "fileMissing": "HarmonyOS のファイルが存在しません",
+      "io": "HDC の入出力エラー",
+      "executableMissing": "hdc が見つかりません。インストールするか設定でパスを指定してください",
+      "offline": "HarmonyOS デバイスがオフラインか見つかりません",
+      "rejected": "hdc がリクエストを拒否しました",
+      "protocol": "hdc の出力を解釈できません",
+      "cancelled": "HarmonyOS の操作はキャンセルされました",
+      "timeout": "HarmonyOS の操作がタイムアウトしました",
+      "commandFailed": "hdc コマンドが失敗しました（終了コード %{code}）",
+      "operationFailed": "HarmonyOS の操作に失敗しました",
+      "shellInputFailed": "HarmonyOS ターミナルの入力に失敗しました",
+      "disconnected": "HarmonyOS デバイスが切断されました",
+      "shellExit": "HarmonyOS ターミナルが終了しました（終了コード %{code}）"
+    },
+    "usbDevice": "USB デバイス",
+    "connectKey": "接続キー",
+    "shell": "HarmonyOS ターミナル",
+    "fileDropUnsupported": "HarmonyOS セッションへのファイルドロップは未対応です",
+    "connectionUnavailable": "保存された HarmonyOS 接続は利用できません"
   }
 }

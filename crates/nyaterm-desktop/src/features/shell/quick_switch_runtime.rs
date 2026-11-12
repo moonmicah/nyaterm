@@ -161,6 +161,7 @@ impl NyaTermApp {
                         SessionLaunchConfig::AdbShell(_)
                         | SessionLaunchConfig::AdbFiles(_)
                         | SessionLaunchConfig::AdbScreen(_)
+                        | SessionLaunchConfig::HdcShell(_)
                         | SessionLaunchConfig::Local(_)
                         | SessionLaunchConfig::Serial(_) => None,
                     }

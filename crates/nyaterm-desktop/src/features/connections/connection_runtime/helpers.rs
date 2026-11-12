@@ -25,6 +25,9 @@ pub(super) enum ConnectionEditorValidationError {
     AndroidDeviceRequired,
     AndroidHostInvalid,
     AndroidDirectoryInvalid,
+    HarmonyDeviceRequired,
+    HarmonyHostInvalid,
+    HarmonyDirectoryInvalid,
     PortInvalid,
     TelnetKeepAliveIntervalInvalid,
     UsernameRequired,
@@ -165,6 +168,7 @@ pub(super) fn connection_editor_from_saved(
     let mut editor = ConnectionEditorState {
         defaults_mode: false,
         android_usb: false,
+        harmony_usb: false,
         android_screen: Default::default(),
         id: Some(connection.id),
         kind: ConnectionKindTab::from_connection_type(&connection.config),
@@ -334,6 +338,23 @@ pub(super) fn connection_editor_from_saved(
             }
             editor.working_dir = directory;
             editor.android_screen = screen;
+        }
+        ConnectionType::Harmony { device, directory } => {
+            editor.harmony_usb = matches!(
+                device,
+                nyaterm_core::models::harmony::HdcDeviceSelector::Usb { .. }
+            );
+            match device {
+                nyaterm_core::models::harmony::HdcDeviceSelector::Usb { connect_key } => {
+                    editor.host = connect_key;
+                    editor.port.clear();
+                }
+                nyaterm_core::models::harmony::HdcDeviceSelector::Tcp { host, port } => {
+                    editor.host = host;
+                    editor.port = port.to_string();
+                }
+            }
+            editor.working_dir = directory;
         }
         ConnectionType::Ssh {
             host,
@@ -741,6 +762,40 @@ pub(super) fn build_saved_connection_from_editor(
                 screen: editor.android_screen,
             }
         }
+        ConnectionKindTab::Harmony => {
+            let host = editor.host.trim().to_string();
+            if host.is_empty() {
+                return Err(if editor.harmony_usb {
+                    ConnectionEditorValidationError::HarmonyDeviceRequired
+                } else {
+                    ConnectionEditorValidationError::HarmonyHostInvalid
+                });
+            }
+            let device = if editor.harmony_usb {
+                nyaterm_core::models::harmony::HdcDeviceSelector::Usb { connect_key: host }
+            } else {
+                nyaterm_core::models::harmony::HdcDeviceSelector::Tcp {
+                    host,
+                    port: parse_port(&editor.port)?,
+                }
+            };
+            device.validate().map_err(|_| {
+                if editor.harmony_usb {
+                    ConnectionEditorValidationError::HarmonyDeviceRequired
+                } else {
+                    ConnectionEditorValidationError::HarmonyHostInvalid
+                }
+            })?;
+            let directory = if editor.working_dir.is_empty() {
+                nyaterm_core::models::harmony::default_harmony_directory()
+            } else {
+                editor.working_dir.clone()
+            };
+            if !directory.starts_with('/') || directory.contains('\0') {
+                return Err(ConnectionEditorValidationError::HarmonyDirectoryInvalid);
+            }
+            ConnectionType::Harmony { device, directory }
+        }
         ConnectionKindTab::Vnc => {
             let host = editor.host.trim().to_string();
             if host.is_empty() {
@@ -831,6 +886,7 @@ pub(super) fn build_saved_connection_from_editor(
             ConnectionType::LocalTerminal { .. } => "Local Terminal".to_string(),
             ConnectionType::Serial { port_name, .. } => port_name.clone(),
             ConnectionType::Adb { device, .. } => device.serial(),
+            ConnectionType::Harmony { device, .. } => device.connect_key(),
         }
     } else {
         editor.name.trim().to_string()

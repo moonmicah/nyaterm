@@ -20,6 +20,7 @@ pub(crate) enum ConnectionKindTab {
     Rdp,
     Vnc,
     Adb,
+    Harmony,
 }
 
 impl ConnectionKindTab {
@@ -32,6 +33,7 @@ impl ConnectionKindTab {
             Self::Rdp => "RDP",
             Self::Vnc => "VNC",
             Self::Adb => "Android (ADB)",
+            Self::Harmony => "HarmonyOS (HDC)",
         }
     }
 
@@ -44,6 +46,7 @@ impl ConnectionKindTab {
             nyaterm_core::ConnectionType::Rdp { .. } => Self::Rdp,
             nyaterm_core::ConnectionType::Vnc { .. } => Self::Vnc,
             nyaterm_core::ConnectionType::Adb { .. } => Self::Adb,
+            nyaterm_core::ConnectionType::Harmony { .. } => Self::Harmony,
         }
     }
 }
@@ -83,6 +86,7 @@ impl ConnectionEditorSection {
     fn for_kind_all_tabs(kind: ConnectionKindTab) -> &'static [Self] {
         match kind {
             ConnectionKindTab::Adb => &[Self::Basic, Self::AndroidScreen],
+            ConnectionKindTab::Harmony => &[Self::Basic],
             ConnectionKindTab::Ssh => &[
                 Self::Basic,
                 Self::Network,
@@ -317,6 +321,7 @@ pub(crate) struct ConnectionEditorState {
     /// basic-info tab, saving reusable parameters instead of a connection.
     pub(crate) defaults_mode: bool,
     pub(crate) android_usb: bool,
+    pub(crate) harmony_usb: bool,
     pub(crate) android_screen: nyaterm_core::models::android::AndroidScreenSettings,
     pub(crate) id: Option<String>,
     pub(crate) kind: ConnectionKindTab,

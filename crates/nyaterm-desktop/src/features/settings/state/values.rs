@@ -132,6 +132,9 @@ impl SettingsFeatureState {
     pub(in crate::features) fn set_android_adb_path(&mut self, text: String) {
         self.summary.android_adb_path = text;
     }
+    pub(in crate::features) fn set_harmony_hdc_path(&mut self, text: String) {
+        self.summary.harmony_hdc_path = text;
+    }
     pub(in crate::features) fn toggle_terminal_zebra_stripes(&mut self) {
         self.summary.terminal_zebra_stripes_enabled = !self.summary.terminal_zebra_stripes_enabled;
     }

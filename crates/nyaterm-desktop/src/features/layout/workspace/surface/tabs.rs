@@ -497,6 +497,7 @@ impl NyaTermApp {
                     nyaterm_transport::SessionKind::AdbShell
                     | nyaterm_transport::SessionKind::AdbFiles
                     | nyaterm_transport::SessionKind::AdbScreen => "Android",
+                    nyaterm_transport::SessionKind::HdcShell => "Harmony",
                 };
                 resolve_connection_icon(Some(icon), kind)
             });

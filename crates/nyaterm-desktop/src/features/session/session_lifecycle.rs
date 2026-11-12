@@ -101,6 +101,23 @@ impl NyaTermApp {
                     cx,
                 );
             }
+            SessionLaunchConfig::HdcShell(config) => {
+                self.begin_background_session_start(
+                    format!("{} duplicate", config.name),
+                    SessionLaunchConfig::HdcShell(config),
+                    metadata.source_connection_id.clone(),
+                    metadata.ai_execution_profile,
+                    SavedConnectionStartOptions {
+                        custom_name,
+                        tab_color: custom_color,
+                        after_session_id: Some(source_session_id),
+                        startup_command,
+                        workspace_split: workspace_split.clone(),
+                        ..Default::default()
+                    },
+                    cx,
+                );
+            }
             SessionLaunchConfig::Local(mut config) => {
                 if let Some(working_dir) = working_dir {
                     config.working_dir = Some(working_dir);
@@ -577,6 +594,10 @@ impl NyaTermApp {
             | SessionLaunchConfig::AdbScreen(_) => {
                 self.shell
                     .set_status(rust_i18n::t!("android.connectionUnavailable").into_owned());
+            }
+            SessionLaunchConfig::HdcShell(_) => {
+                self.shell
+                    .set_status(rust_i18n::t!("harmony.connectionUnavailable").into_owned());
             }
             SessionLaunchConfig::Local(mut config) => {
                 self.apply_desired_geometry_to_local_config(&mut config);

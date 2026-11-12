@@ -58,6 +58,7 @@ pub(crate) enum SessionLaunchConfig {
     AdbShell(AndroidSessionConfig),
     AdbFiles(AndroidSessionConfig),
     AdbScreen(AndroidSessionConfig),
+    HdcShell(HarmonySessionConfig),
     Local(LocalSessionConfig),
     Ssh(Box<SshSessionConfig>),
     Telnet(TelnetSessionConfig),
@@ -79,6 +80,16 @@ pub(crate) struct AndroidSessionConfig {
     pub rows: u16,
 }
 
+#[derive(Clone)]
+pub(crate) struct HarmonySessionConfig {
+    pub name: String,
+    pub device_key: String,
+    pub device: nyaterm_core::models::harmony::HdcDeviceSelector,
+    pub binding: nyaterm_harmony::client::DeviceBinding,
+    pub cols: u16,
+    pub rows: u16,
+}
+
 impl SessionLaunchConfig {
     pub(crate) fn matches_saved_protocol(&self, config: &ConnectionType) -> bool {
         matches!(
@@ -93,6 +104,7 @@ impl SessionLaunchConfig {
                     Self::AdbShell(_) | Self::AdbFiles(_) | Self::AdbScreen(_),
                     ConnectionType::Adb { .. }
                 )
+                | (Self::HdcShell(_), ConnectionType::Harmony { .. })
         )
     }
 
@@ -132,6 +144,7 @@ impl SessionLaunchConfig {
     pub(crate) fn encoding(&self) -> Option<&str> {
         match self {
             Self::AdbShell(_) => Some("UTF-8"),
+            Self::HdcShell(_) => Some("UTF-8"),
             Self::AdbFiles(_) | Self::AdbScreen(_) => None,
             Self::Local(config) => Some(&config.encoding),
             Self::Ssh(config) => Some(&config.encoding),
@@ -157,7 +170,8 @@ impl SessionLaunchConfig {
             | Self::Vnc(_)
             | Self::AdbShell(_)
             | Self::AdbFiles(_)
-            | Self::AdbScreen(_) => return None,
+            | Self::AdbScreen(_)
+            | Self::HdcShell(_) => return None,
         };
         let username = username.trim();
         (!username.is_empty()).then_some(username)

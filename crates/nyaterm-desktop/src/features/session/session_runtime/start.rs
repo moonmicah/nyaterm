@@ -39,6 +39,7 @@ fn session_start_focus_target(config: &ConnectionType) -> SessionStartFocusTarge
             SessionStartFocusTarget::RemoteDesktop
         }
         ConnectionType::Adb { .. }
+        | ConnectionType::Harmony { .. }
         | ConnectionType::Ssh { .. }
         | ConnectionType::LocalTerminal { .. }
         | ConnectionType::Telnet { .. }
@@ -249,6 +250,11 @@ impl NyaTermApp {
         if matches!(connection.config, ConnectionType::Adb { .. }) {
             let kind = options.android_view;
             self.start_android_connection(connection, options, kind, cx);
+            return;
+        }
+
+        if matches!(connection.config, ConnectionType::Harmony { .. }) {
+            self.start_harmony_connection(connection, options, cx);
             return;
         }
 
@@ -493,6 +499,9 @@ impl NyaTermApp {
         match connection.config.clone() {
             ConnectionType::Adb { .. } => {
                 unreachable!("Android start is routed before credential resolution")
+            }
+            ConnectionType::Harmony { .. } => {
+                unreachable!("HarmonyOS start is routed before credential resolution")
             }
             ConnectionType::LocalTerminal {
                 shell_path,

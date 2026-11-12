@@ -4531,5 +4531,35 @@
     "tmuxCommandFailed": "Échec de la commande tmux",
     "details": "Détails (%{count})",
     "repeated": "Occurrences : %{count}"
+  },
+  "harmony": {
+    "connecting": "Connexion à HarmonyOS · %{name}",
+    "shellTitle": "%{name} · Terminal",
+    "hdcExecutable": "Exécutable HDC",
+    "hdcPathHint": "Laissez vide pour détecter hdc via PATH ou le DevEco SDK ; un chemin personnalisé doit pointer vers un exécutable valide.",
+    "hdcAutoDetect": "Détection automatique de hdc",
+    "errors": {
+      "deviceRequired": "Connectez un appareil HarmonyOS en USB ou saisissez sa clé de connexion",
+      "hostInvalid": "Saisissez une adresse d'hôte HarmonyOS valide",
+      "directoryInvalid": "Saisissez un chemin absolu HarmonyOS sans caractère NUL",
+      "fileMissing": "Le fichier HarmonyOS n'existe pas",
+      "io": "Erreur d'E/S HDC",
+      "executableMissing": "hdc introuvable ; installez-le ou indiquez son chemin dans les paramètres",
+      "offline": "L'appareil HarmonyOS est hors ligne ou introuvable",
+      "rejected": "hdc a refusé la requête",
+      "protocol": "Sortie hdc inattendue",
+      "cancelled": "Opération HarmonyOS annulée",
+      "timeout": "L'opération HarmonyOS a expiré",
+      "commandFailed": "Échec de la commande hdc (code %{code})",
+      "operationFailed": "Échec de l'opération HarmonyOS",
+      "shellInputFailed": "Échec de saisie dans le terminal HarmonyOS",
+      "disconnected": "Appareil HarmonyOS déconnecté",
+      "shellExit": "Le terminal HarmonyOS s'est fermé (code %{code})"
+    },
+    "usbDevice": "Appareil USB",
+    "connectKey": "Clé de connexion",
+    "shell": "Terminal HarmonyOS",
+    "fileDropUnsupported": "Le dépôt de fichiers n'est pas encore pris en charge pour les sessions HarmonyOS",
+    "connectionUnavailable": "La connexion HarmonyOS enregistrée est indisponible"
   }
 }

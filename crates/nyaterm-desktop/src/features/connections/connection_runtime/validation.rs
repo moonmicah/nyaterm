@@ -118,6 +118,8 @@ impl ConnectionEditorValidationError {
         let field = match self {
             ConnectionEditorValidationError::AndroidDeviceRequired
             | ConnectionEditorValidationError::AndroidHostInvalid
+            | ConnectionEditorValidationError::HarmonyDeviceRequired
+            | ConnectionEditorValidationError::HarmonyHostInvalid
             | ConnectionEditorValidationError::HostRequired
             | ConnectionEditorValidationError::RdpMstscHostInvalid => ConnectionEditorField::Host,
             ConnectionEditorValidationError::PortInvalid => ConnectionEditorField::Port,
@@ -125,6 +127,9 @@ impl ConnectionEditorValidationError {
             | ConnectionEditorValidationError::MissingAccount => ConnectionEditorField::Username,
             ConnectionEditorValidationError::VncPasswordTooLong => ConnectionEditorField::Password,
             ConnectionEditorValidationError::AndroidDirectoryInvalid => {
+                ConnectionEditorField::WorkingDir
+            }
+            ConnectionEditorValidationError::HarmonyDirectoryInvalid => {
                 ConnectionEditorField::WorkingDir
             }
             ConnectionEditorValidationError::ShellPathRequired => ConnectionEditorField::ShellPath,

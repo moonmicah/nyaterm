@@ -407,6 +407,8 @@ impl NyaTermApp {
                 tab_placement,
                 status_message: if kind == nyaterm_transport::SessionKind::AdbShell {
                     rust_i18n::t!("android.connecting", name = connection_name).into_owned()
+                } else if kind == nyaterm_transport::SessionKind::HdcShell {
+                    rust_i18n::t!("harmony.connecting", name = connection_name).into_owned()
                 } else {
                     format!("connecting to {connection_name}")
                 },
@@ -481,6 +483,26 @@ impl NyaTermApp {
                             SessionStartSuccess::channel(Arc::clone(&session_manager), info, None)
                         })
                         .map_err(crate::features::android::labels::session_start_error_message)
+                } else if let SessionLaunchConfig::HdcShell(config) = &launch_config {
+                    session_manager
+                        .create_hdc_session_with_cancel(
+                            nyaterm_transport::hdc_shell::HdcShellConfig {
+                                name: rust_i18n::t!("harmony.shellTitle", name = config.name)
+                                    .into_owned(),
+                                binding: config.binding.clone(),
+                                cols: config.cols,
+                                rows: config.rows,
+                            },
+                            || {
+                                attempt
+                                    .check()
+                                    .map_err(|_| nyaterm_harmony::error::HdcError::Cancelled)
+                            },
+                        )
+                        .map(|info| {
+                            SessionStartSuccess::channel(Arc::clone(&session_manager), info, None)
+                        })
+                        .map_err(crate::features::harmony::labels::session_start_error_message)
                 } else {
                     create_session_from_launch_config(
                         &session_manager,
@@ -1289,6 +1311,7 @@ fn session_kind_for_launch_config(config: &SessionLaunchConfig) -> SessionKind {
         SessionLaunchConfig::AdbShell(_) => SessionKind::AdbShell,
         SessionLaunchConfig::AdbFiles(_) => SessionKind::AdbFiles,
         SessionLaunchConfig::AdbScreen(_) => SessionKind::AdbScreen,
+        SessionLaunchConfig::HdcShell(_) => SessionKind::HdcShell,
         SessionLaunchConfig::Local(_) => SessionKind::LocalPty,
         SessionLaunchConfig::Ssh(_) => SessionKind::Ssh,
         SessionLaunchConfig::Telnet(config) if config.raw_tcp => SessionKind::RawTcp,
@@ -1326,6 +1349,21 @@ fn create_session_from_launch_config(
         SessionLaunchConfig::AdbFiles(_) | SessionLaunchConfig::AdbScreen(_) => {
             unreachable!("Android non-terminal views own no terminal transport")
         }
+        SessionLaunchConfig::HdcShell(config) => session_manager
+            .create_hdc_session(nyaterm_transport::hdc_shell::HdcShellConfig {
+                name: rust_i18n::t!("harmony.shellTitle", name = config.name).into_owned(),
+                binding: config.binding.clone(),
+                cols: config.cols,
+                rows: config.rows,
+            })
+            .map(|session_info| {
+                SessionStartSuccess::channel(
+                    Arc::clone(session_manager),
+                    session_info,
+                    Some(SessionLaunchConfig::HdcShell(config)),
+                )
+            })
+            .map_err(crate::features::harmony::labels::session_start_error_message),
         SessionLaunchConfig::Local(config) => session_manager
             .create_local_session(config)
             .map(|session_info| SessionStartSuccess {
@@ -1376,6 +1414,9 @@ fn launch_config_for_session_info(info: &SessionInfo) -> SessionLaunchConfig {
     match info.kind {
         SessionKind::AdbShell | SessionKind::AdbFiles | SessionKind::AdbScreen => {
             unreachable!("Android metadata is supplied by its launcher")
+        }
+        SessionKind::HdcShell => {
+            unreachable!("HarmonyOS metadata is supplied by its launcher")
         }
         SessionKind::LocalPty => SessionLaunchConfig::Local(LocalSessionConfig {
             name: info.name.clone(),

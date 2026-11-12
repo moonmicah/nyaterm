@@ -123,6 +123,15 @@ impl NyaTermApp {
             ConnectionEditorValidationError::AndroidDirectoryInvalid => {
                 t!("android.errors.directoryInvalid").into()
             }
+            ConnectionEditorValidationError::HarmonyDeviceRequired => {
+                t!("harmony.errors.deviceRequired").into()
+            }
+            ConnectionEditorValidationError::HarmonyHostInvalid => {
+                t!("harmony.errors.hostInvalid").into()
+            }
+            ConnectionEditorValidationError::HarmonyDirectoryInvalid => {
+                t!("harmony.errors.directoryInvalid").into()
+            }
             ConnectionEditorValidationError::HostRequired => t!("dialog.hostRequired").into(),
             ConnectionEditorValidationError::PortInvalid => t!("dialog.portInvalid").into(),
             ConnectionEditorValidationError::TelnetKeepAliveIntervalInvalid => {
@@ -231,6 +240,7 @@ impl NyaTermApp {
         ConnectionEditorState {
             defaults_mode: false,
             android_usb: false,
+            harmony_usb: false,
             android_screen: Default::default(),
             id: None,
             kind: ConnectionKindTab::Ssh,
@@ -1057,6 +1067,7 @@ impl NyaTermApp {
                 ConnectionKindTab::Rdp => "RDP",
                 ConnectionKindTab::Vnc => "VNC",
                 ConnectionKindTab::Adb => "Android",
+                ConnectionKindTab::Harmony => "HarmonyOS",
             };
             self.shell
                 .set_status(t!("dialog.connectionTypeChanged", "type" => kind_label));

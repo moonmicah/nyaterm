@@ -21,6 +21,7 @@ nyaterm-agent-client.workspace = true
 nyaterm-cloud-storage.workspace = true
 nyaterm-core.workspace = true
 nyaterm-android.workspace = true
+nyaterm-harmony.workspace = true
 nyaterm-mcp-protocol.workspace = true
 nyaterm-mcp-host.workspace = true
 nyaterm-otp.workspace = true

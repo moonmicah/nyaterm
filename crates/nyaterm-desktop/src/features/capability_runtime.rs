@@ -1483,6 +1483,7 @@ fn session_kind_name(kind: SessionKind) -> &'static str {
         SessionKind::AdbShell => "adb_shell",
         SessionKind::AdbFiles => "adb_files",
         SessionKind::AdbScreen => "adb_screen",
+        SessionKind::HdcShell => "hdc_shell",
     }
 }
 
@@ -1505,6 +1506,7 @@ pub(in crate::features) fn connection_type_name(
         ConnectionType::Telnet { .. } => Some("telnet"),
         ConnectionType::Serial { .. } => Some("serial"),
         ConnectionType::Adb { .. } => Some("adb"),
+        ConnectionType::Harmony { .. } => Some("harmony"),
         ConnectionType::Rdp { .. } | ConnectionType::Vnc { .. } => None,
     }
 }

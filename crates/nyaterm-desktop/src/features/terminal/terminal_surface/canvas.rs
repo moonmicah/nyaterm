@@ -1362,6 +1362,7 @@ fn terminal_canvas_session_kind_label(config: &SessionLaunchConfig) -> &'static 
         SessionLaunchConfig::AdbShell(_)
         | SessionLaunchConfig::AdbFiles(_)
         | SessionLaunchConfig::AdbScreen(_) => "Android",
+        SessionLaunchConfig::HdcShell(_) => "HarmonyOS",
     }
 }
 

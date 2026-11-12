@@ -2411,6 +2411,7 @@ fn connection_editor_state_with_secret_draft() -> ConnectionEditorState {
     ConnectionEditorState {
         defaults_mode: false,
         android_usb: false,
+        harmony_usb: false,
         android_screen: Default::default(),
         id: Some("conn".to_string()),
         kind: ConnectionKindTab::Ssh,
