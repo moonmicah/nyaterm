@@ -25,7 +25,8 @@ pub mod widgets;
 
 // Generates `crate::_rust_i18n_t!`, which `rust_i18n::t!` forwards to, so this must
 // stay in the crate root. `locales/` is resolved against CARGO_MANIFEST_DIR at macro
-// expansion time; `build.rs` is what makes cargo notice edits to it.
+// expansion time; `build.rs` is what makes cargo notice edits to it, including a
+// content hash that defeats incremental reuse of a stale catalog.
 rust_i18n::i18n!("locales", fallback = "en");
 
 const I18N_PRELOAD_STACK_BYTES: usize = 16 * 1024 * 1024;
