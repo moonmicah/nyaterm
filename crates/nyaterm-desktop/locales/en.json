@@ -4536,7 +4536,7 @@
     "connecting": "Connecting to HarmonyOS · %{name}",
     "shellTitle": "%{name} · Terminal",
     "hdcExecutable": "HDC executable",
-    "hdcPathHint": "Leave empty to detect hdc from PATH or the DevEco SDK; a custom path must point to a valid executable.",
+    "hdcPathHint": "Leave empty to use the bundled official hdc first, then detect hdc from PATH, the DevEco SDK, or Command Line Tools; a custom path must point to a valid executable.",
     "hdcAutoDetect": "Auto-detect hdc",
     "errors": {
       "deviceRequired": "Connect a HarmonyOS device over USB or enter its connect key",

@@ -4536,7 +4536,7 @@
     "connecting": "HarmonyOS에 연결 중 · %{name}",
     "shellTitle": "%{name} · 터미널",
     "hdcExecutable": "HDC 실행 파일",
-    "hdcPathHint": "비워 두면 PATH 또는 DevEco SDK에서 hdc를 자동으로 찾습니다. 직접 지정할 경우 유효한 실행 파일이어야 합니다.",
+    "hdcPathHint": "비워 두면 내장된 공식 hdc를 우선 사용하고, 다음으로 PATH 또는 DevEco SDK / Command Line Tools에서 자동으로 찾습니다. 직접 지정할 경우 유효한 실행 파일이어야 합니다.",
     "hdcAutoDetect": "hdc 자동 감지",
     "errors": {
       "deviceRequired": "USB로 HarmonyOS 기기를 연결하거나 연결 키를 입력하세요",

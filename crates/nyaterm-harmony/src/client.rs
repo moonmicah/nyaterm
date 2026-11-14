@@ -365,6 +365,107 @@ pub fn reap(child: &mut Child, grace: Duration) -> HdcResult<()> {
 /// Resolve the hdc executable: explicit settings path first, then an optional
 /// bundled copy beside the application, then `PATH`. SDK roots are only
 /// consulted in debug builds, mirroring the ADB backend.
+/// Official SDK/toolchain locations probed after the bundled copy and PATH.
+///
+/// Release builds must probe these too: most users get hdc from DevEco Studio
+/// or the standalone Command Line Tools without adding it to PATH, and the
+/// published settings hint promises automatic discovery.
+fn sdk_candidates(name: &str) -> Vec<PathBuf> {
+    let mut roots = Vec::new();
+    for variable in [
+        "HDC_HOME",
+        "DEVECO_SDK_HOME",
+        "OHOS_SDK_HOME",
+        "OHOS_BASE_SDK_HOME",
+        "HARMONYOS_SDK_HOME",
+    ] {
+        if let Some(root) = std::env::var_os(variable) {
+            roots.push(PathBuf::from(root));
+        }
+    }
+    #[cfg(windows)]
+    {
+        if let Some(local) = std::env::var_os("LOCALAPPDATA") {
+            roots.push(PathBuf::from(local).join("Huawei").join("Sdk"));
+        }
+        if let Some(programs) = std::env::var_os("ProgramFiles") {
+            roots.push(
+                PathBuf::from(programs)
+                    .join("Huawei")
+                    .join("DevEco Studio")
+                    .join("sdk"),
+            );
+        }
+    }
+    let suffixes = [
+        PathBuf::from(name),
+        PathBuf::from("toolchains").join(name),
+        PathBuf::from("default")
+            .join("openharmony")
+            .join("toolchains")
+            .join(name),
+        PathBuf::from("sdk")
+            .join("default")
+            .join("openharmony")
+            .join("toolchains")
+            .join(name),
+        PathBuf::from("Command-Line-Tools")
+            .join("sdk")
+            .join("default")
+            .join("openharmony")
+            .join("toolchains")
+            .join(name),
+    ];
+    roots
+        .into_iter()
+        .flat_map(|root| suffixes.iter().map(move |suffix| root.join(suffix)))
+        .collect()
+}
+
+fn verify_bundled_hdc(executable: &Path) -> HdcResult<()> {
+    let root = executable
+        .parent()
+        .and_then(Path::parent)
+        .ok_or(HdcError::ExecutableMissing)?;
+    let manifest = root.join("harmony-resources.json");
+    if !manifest.is_file() && cfg!(debug_assertions) {
+        return Ok(());
+    }
+    let metadata = std::fs::metadata(&manifest)?;
+    if metadata.len() > 128 * 1024 {
+        return Err(HdcError::Protocol("resource manifest length"));
+    }
+    let document: serde_json::Value = serde_json::from_slice(&std::fs::read(manifest)?)
+        .map_err(|_| HdcError::Protocol("resource manifest"))?;
+    let files = document
+        .get("files")
+        .and_then(serde_json::Value::as_object)
+        .ok_or(HdcError::Protocol("resource inventory"))?;
+    let expected: &[&str] = if cfg!(windows) {
+        &["hdc/hdc.exe", "hdc/libusb_shared.dll", "hdc/NOTICE.txt", "hdc/SOURCE.json"]
+    } else {
+        &["hdc/hdc", "hdc/NOTICE.txt", "hdc/SOURCE.json"]
+    };
+    if expected.iter().any(|name| !files.contains_key(*name)) {
+        return Err(HdcError::Protocol("hdc companions missing"));
+    }
+    for (name, hash) in files.iter().filter(|(name, _)| name.starts_with("hdc/")) {
+        if std::path::Path::new(name)
+            .components()
+            .any(|component| !matches!(component, std::path::Component::Normal(_)))
+            || name.contains('\\')
+        {
+            return Err(HdcError::Protocol("resource path"));
+        }
+        use sha2::Digest;
+        let bytes = std::fs::read(root.join(name))?;
+        if Some(hex::encode(sha2::Sha256::digest(&bytes)).as_str()) != hash.as_str() {
+            return Err(HdcError::Protocol("bundled hdc checksum"));
+        }
+    }
+    Ok(())
+}
+
 pub fn resolve_executable(custom: Option<&Path>) -> HdcResult<PathBuf> {
     if let Some(path) = custom.filter(|path| !path.as_os_str().is_empty()) {
         #[cfg(unix)]
@@ -386,6 +487,7 @@ pub fn resolve_executable(custom: Option<&Path>) -> HdcResult<PathBuf> {
         .join("hdc")
         .join(name);
     if bundled.is_file() {
+        verify_bundled_hdc(&bundled)?;
         return Ok(bundled);
     }
     if let Some(path) = std::env::var_os("PATH").and_then(|path| {
@@ -395,27 +497,9 @@ pub fn resolve_executable(custom: Option<&Path>) -> HdcResult<PathBuf> {
     }) {
         return Ok(path);
     }
-    if cfg!(debug_assertions) {
-        for variable in ["DEVECO_SDK_HOME", "OHOS_SDK_HOME", "OHOS_BASE_SDK_HOME"] {
-            if let Some(root) = std::env::var_os(variable) {
-                for candidate in [
-                    PathBuf::from(&root)
-                        .join("default")
-                        .join("openharmony")
-                        .join("toolchains")
-                        .join(name),
-                    PathBuf::from(&root)
-                        .join("sdk")
-                        .join("default")
-                        .join("openharmony")
-                        .join("toolchains")
-                        .join(name),
-                ] {
-                    if candidate.is_file() {
-                        return Ok(candidate);
-                    }
-                }
-            }
+    for candidate in sdk_candidates(name) {
+        if candidate.is_file() {
+            return Ok(candidate);
         }
     }
     Err(HdcError::ExecutableMissing)

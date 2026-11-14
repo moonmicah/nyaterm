@@ -4536,7 +4536,7 @@
     "connecting": "正在連線 HarmonyOS · %{name}",
     "shellTitle": "%{name} · 終端機",
     "hdcExecutable": "HDC 可執行檔",
-    "hdcPathHint": "留空則從 PATH 或 DevEco SDK 自動尋找 hdc；指定的路徑必須是有效可執行檔。",
+    "hdcPathHint": "留空則優先使用安裝包內建的官方 hdc，其次從 PATH 或 DevEco SDK / Command Line Tools 自動尋找；指定的路徑必須是有效可執行檔。",
     "hdcAutoDetect": "自動偵測 hdc",
     "errors": {
       "deviceRequired": "請透過 USB 連接 HarmonyOS 裝置或填寫連線識別碼",
