@@ -313,7 +313,18 @@ def copy_helpers(destination: Path, target: str) -> list[Path]:
             make_executable(binary)
         copied.append(binary)
     copy_android_resources(destination, target)
+    copy_harmony_resources(destination, target)
     return copied
+
+
+def copy_harmony_resources(destination: Path, target: str) -> list[Path]:
+    """Stage the pinned official hdc toolchain, if this target bundles one."""
+    import prepare_harmony
+    staged = prepare_harmony.ensure_staged(target)
+    if staged is None:
+        return []
+    prepare_harmony.stage_runtime(staged, destination)
+    return prepare_harmony.write_resource_manifest(destination, target)
 
 
 def copy_android_resources(destination: Path, target: str) -> list[Path]:
@@ -414,7 +425,7 @@ def create_windows_packages(
     installer_root.mkdir()
     shutil.copy2(binary, installer_root / "NyaTerm.exe")
     installer_helpers = copy_helpers(installer_root, info.target)
-    installer_conpty = [*copy_conpty(installer_root, info.target), *copy_android_resources(installer_root, info.target)]
+    installer_conpty = [*copy_conpty(installer_root, info.target), *copy_android_resources(installer_root, info.target), *copy_harmony_resources(installer_root, info.target)]
     copy_release_documents(installer_root, version)
     shutil.copy2(ICON_DIR / "icon.ico", installer_root / "icon.ico")
 

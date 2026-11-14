@@ -77,6 +77,34 @@ def stage_android_fixture(destination, target):
     return paths
 
 
+def harmony_fixture(target):
+    import prepare_harmony
+    if "windows" not in target:
+        return {}
+    entries = {
+        "hdc/SOURCE.json": b"{}",
+        "hdc/NOTICE.txt": b"license",
+        "hdc/LICENSE.txt": b"license",
+        "hdc/oh-uni-package.json": b"{}",
+        "hdc/hdc.exe": fake_pe(0x8664),
+        "hdc/libusb_shared.dll": fake_pe(0x8664),
+    }
+    manifest = {"schema": 1, "target": target, "dependencies": prepare_harmony.METADATA,
+                "files": {name: hashlib.sha256(data).hexdigest() for name, data in entries.items()}}
+    entries["harmony-resources.json"] = json.dumps(manifest).encode()
+    return entries
+
+
+def stage_harmony_fixture(destination, target):
+    paths = []
+    for name, data in harmony_fixture(target).items():
+        path = destination / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+        paths.append(path)
+    return paths
+
+
 def newc_entry(name: str, content: bytes) -> bytes:
     encoded_name = name.encode("utf-8") + b"\0"
     fields = [0, 0, 0, 0, 1, 0, len(content), 0, 0, 0, 0, len(encoded_name), 0]
@@ -101,6 +129,7 @@ def write_portable(
     root = "NyaTerm-portable"
     with zipfile.ZipFile(path, "w") as archive:
         for name, data in android_fixture(target).items(): archive.writestr(f"{root}/{name}", data)
+        for name, data in harmony_fixture(target).items(): archive.writestr(f"{root}/{name}", data)
         archive.writestr(
             f"{root}/NyaTerm.exe",
             fake_pe(machine, subsystem=2, resource_ids=application_resources),
@@ -150,6 +179,7 @@ def verify_installer_fixture(
                    for name in verify_native_package.helper_filenames(target)},
             }
             entries.update(android_fixture(target))
+            entries.update(harmony_fixture(target))
             for relative in package_native.conpty_files(target):
                 if relative.as_posix() == missing_conpty:
                     continue

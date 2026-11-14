@@ -326,6 +326,34 @@ def verify_android_resources(read, target: str) -> None:
             if macho_cpu_type(data) != (0x0100000C if target.startswith("aarch64") else 0x01000007): raise RuntimeError(f"Android resource Mach-O architecture mismatch: {name}")
 
 
+def verify_harmony_resources(read, target: str) -> None:
+    """Validate the bundled official hdc toolchain and each file's checksum."""
+    import prepare_harmony
+    if "windows" not in target:
+        return
+    try:
+        manifest = json.loads(read("harmony-resources.json"))
+    except (KeyError, FileNotFoundError, ValueError) as error:
+        raise RuntimeError("HarmonyOS resource manifest is missing or invalid") from error
+    if (manifest.get("schema") != 1 or manifest.get("target") != target
+            or manifest.get("dependencies") != prepare_harmony.METADATA):
+        raise RuntimeError("HarmonyOS resource provenance does not match pinned dependencies")
+    files = manifest.get("files", {})
+    required = {"hdc/hdc.exe", "hdc/libusb_shared.dll", "hdc/NOTICE.txt",
+                "hdc/LICENSE.txt", "hdc/oh-uni-package.json", "hdc/SOURCE.json"}
+    if not required <= files.keys():
+        raise RuntimeError(f"HarmonyOS resource inventory is incomplete: {required - files.keys()}")
+    for name, expected in files.items():
+        require_safe_archive_path(name)
+        if not name.startswith("hdc/"):
+            raise RuntimeError(f"Unexpected HarmonyOS resource path: {name}")
+        data = read(name)
+        if hashlib.sha256(data).hexdigest() != expected:
+            raise RuntimeError(f"HarmonyOS resource checksum mismatch: {name}")
+        if name.endswith((".exe", ".dll")) and pe_machine(data) != 0x8664:
+            raise RuntimeError(f"HarmonyOS resource PE architecture mismatch: {name}")
+
+
 def verify_windows_portable(path: Path, target: str, version: str) -> None:
     root = windows_portable.LAYOUT["root"]
     executables = ["NyaTerm.exe", *helper_filenames(target)]
@@ -353,6 +381,7 @@ def verify_windows_portable(path: Path, target: str, version: str) -> None:
         if packaged_version != version:
             raise RuntimeError(f"{path.name} contains version {packaged_version}, expected {version}")
         verify_android_resources(lambda name: archive.read(f"{root}/{name}"), target)
+        verify_harmony_resources(lambda name: archive.read(f"{root}/{name}"), target)
         binaries = {name: archive.read(f"{root}/{name}") for name in executables}
         machines = {name: pe_machine(data) for name, data in binaries.items()}
         conpty_machines = {
@@ -496,6 +525,7 @@ def verify_windows_installer(path: Path, target: str, version: str) -> None:
         if len(applications) != 1:
             raise RuntimeError(f"{path.name} must contain exactly one NyaTerm.exe")
         verify_android_resources(lambda name: files[name].read_bytes(), target)
+        verify_harmony_resources(lambda name: files[name].read_bytes(), target)
         verify_windows_application_binary(applications[0].read_bytes(), path.name)
         verify_windows_application_version(applications[0], version)
         conpty_required = [
@@ -649,6 +679,7 @@ def verify_windows_msi(path: Path, target: str, version: str) -> None:
             if pe_machine(payload[name].read_bytes()) != machine:
                 raise RuntimeError(f"MSI contains the wrong PE machine for {name}")
         verify_android_resources(lambda name: payload[name].read_bytes(), target)
+        verify_harmony_resources(lambda name: payload[name].read_bytes(), target)
         verify_windows_application_binary(payload["NyaTerm.exe"].read_bytes(), path.name)
         verify_windows_application_version(payload["NyaTerm.exe"], version)
         verify_conpty_machines(
