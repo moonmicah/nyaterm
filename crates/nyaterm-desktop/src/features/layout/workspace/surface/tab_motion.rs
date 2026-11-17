@@ -1,8 +1,7 @@
 use std::{cell::RefCell, rc::Rc, time::Instant};
 
 use gpui::{
-    AnyElement, App, Bounds, Element, ElementId, GlobalElementId, InspectorElementId, LayoutId,
-    Pixels, ScrollHandle, Window, point, px,
+    AnyElement, App, Bounds, Element, ElementId, GlobalElementId, InspectorElementId, LayoutId, Pixels, ScrollHandle, Window, point, px,
 };
 
 use crate::features::shell::tab_reorder::TabReorderMotion;

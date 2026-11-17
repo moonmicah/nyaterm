@@ -54,9 +54,16 @@ def conpty_files(target: str) -> tuple[Path, ...]:
 
 
 def copy_conpty(destination: Path, target: str) -> list[Path]:
+    files = conpty_files(target)
     source_root = prepare_conpty.STAGING / "resources" / "windows" / "conpty"
+    if not all((source_root / relative).is_file() for relative in files):
+        # The staging derives from the pinned nupkg recorded in
+        # conpty-package.json; rebuild it instead of failing when target/ was
+        # cleaned. `prepare()` is idempotent and only reaches the network when
+        # the nupkg itself is missing.
+        prepare_conpty.prepare()
     copied = []
-    for relative in conpty_files(target):
+    for relative in files:
         source = source_root / relative
         if not source.is_file():
             raise FileNotFoundError(f"prepared ConPTY file not found: {source}")
