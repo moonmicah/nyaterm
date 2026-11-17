@@ -9,6 +9,7 @@ mod connections;
 mod file_manager;
 mod font_catalog;
 mod formatting;
+mod harmony;
 mod inspector;
 pub(crate) mod layout;
 mod mcp;

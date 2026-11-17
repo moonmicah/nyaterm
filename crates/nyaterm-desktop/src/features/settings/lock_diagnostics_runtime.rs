@@ -322,7 +322,8 @@ impl NyaTermApp {
                 SessionKind::Vnc
                 | SessionKind::AdbShell
                 | SessionKind::AdbFiles
-                | SessionKind::AdbScreen => {}
+                | SessionKind::AdbScreen
+                | SessionKind::HdcShell => {}
             }
         }
 

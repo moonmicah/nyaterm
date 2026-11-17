@@ -21,7 +21,7 @@ impl TabSessionCapability {
             SessionLaunchConfig::Serial(_) => Self::Serial,
             SessionLaunchConfig::Rdp(_) => Self::Rdp,
             SessionLaunchConfig::Vnc(_) => Self::Vnc,
-            SessionLaunchConfig::AdbShell(_) => Self::AdbShell,
+            SessionLaunchConfig::AdbShell(_) | SessionLaunchConfig::HdcShell(_) => Self::AdbShell,
             SessionLaunchConfig::AdbFiles(_) | SessionLaunchConfig::AdbScreen(_) => Self::AdbView,
         }
     }

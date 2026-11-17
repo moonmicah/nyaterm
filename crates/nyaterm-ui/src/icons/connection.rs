@@ -154,6 +154,7 @@ const SYSTEM_ICONS: &[(&str, IconDef)] = &[
     ("uos", IconDef::full_color("color/os/uos.svg")),
     ("aws", IconDef::full_color("color/os/aws.svg")),
     ("huawei", IconDef::full_color("color/os/huawei.svg")),
+    ("harmony", IconDef::full_color("color/os/huawei.svg")),
     ("git", IconDef::full_color("color/os/git.svg")),
     ("cmd", IconDef::full_color("color/os/cmd.svg")),
     ("powershell", IconDef::full_color("color/os/powershell.svg")),
@@ -247,6 +248,7 @@ pub fn default_connection_icon_for_kind(kind: &str) -> IconDef {
         "RDP" => "rdp",
         "VNC" => "vnc",
         "ADB" | "Android" | "Android (ADB)" => "android",
+        "HDC" | "Harmony" | "HarmonyOS" | "HarmonyOS (HDC)" => "harmony",
         _ => DEFAULT_CONNECTION_ICON,
     };
     lookup(key).expect("protocol defaults must be registered connection icons")

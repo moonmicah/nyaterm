@@ -7096,6 +7096,7 @@ dependencies = [
  "nyaterm-completion-runtime",
  "nyaterm-core",
  "nyaterm-files",
+ "nyaterm-harmony",
  "nyaterm-i18n",
  "nyaterm-mcp-host",
  "nyaterm-mcp-protocol",
@@ -7151,6 +7152,7 @@ dependencies = [
  "libc",
  "nyaterm-android",
  "nyaterm-core",
+ "nyaterm-harmony",
  "nyaterm-terminal",
  "nyaterm-transport",
  "russh",
@@ -7167,6 +7169,19 @@ dependencies = [
  "unicode-normalization",
  "uuid",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "nyaterm-harmony"
+version = "2.0.6"
+dependencies = [
+ "hex",
+ "nyaterm-core",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "tempfile",
+ "thiserror 2.0.20",
 ]
 
 [[package]]
@@ -7450,6 +7465,7 @@ dependencies = [
  "md5",
  "nyaterm-android",
  "nyaterm-core",
+ "nyaterm-harmony",
  "nyaterm-terminal",
  "portable-pty",
  "rand 0.10.3",

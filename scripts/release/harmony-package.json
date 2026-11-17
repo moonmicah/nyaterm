@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "tool": "Command Line Tools for HarmonyOS",
+  "archive": "commandline-tools-windows-x64-26.0.0.865.zip",
+  "source": "https://developer.huawei.com/consumer/cn/download/command-line-tools-for-hmos",
+  "size": 2722330971,
+  "sha256": "fedd06dccfd6134e93ca7727b6d202fcf47c3bc9c3a26a61ae7f2ccb97cf159a",
+  "toolchains": {
+    "version": "26.0.0.105",
+    "api_version": "26",
+    "prefix": "command-line-tools/sdk/default/openharmony/toolchains/"
+  },
+  "files": [
+    "hdc.exe",
+    "libusb_shared.dll",
+    "NOTICE.txt",
+    "oh-uni-package.json"
+  ],
+  "license": "command-line-tools/LICENSE.txt"
+}

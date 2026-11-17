@@ -42,6 +42,7 @@ impl<T> BatchField<T> {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum ConnectionBatchKind {
     Adb,
+    Harmony,
     Ssh,
     LocalTerminal,
     Telnet,
@@ -54,6 +55,7 @@ impl ConnectionBatchKind {
     pub fn from_config(config: &ConnectionType) -> Self {
         match config {
             ConnectionType::Adb { .. } => Self::Adb,
+            ConnectionType::Harmony { .. } => Self::Harmony,
             ConnectionType::Ssh { .. } => Self::Ssh,
             ConnectionType::LocalTerminal { .. } => Self::LocalTerminal,
             ConnectionType::Telnet { .. } => Self::Telnet,
@@ -69,7 +71,7 @@ impl ConnectionBatchKind {
             Self::Telnet => super::default_telnet_port(),
             Self::Rdp => super::default_rdp_port(),
             Self::Vnc => super::default_vnc_port(),
-            Self::LocalTerminal | Self::Serial | Self::Adb => 0,
+            Self::LocalTerminal | Self::Serial | Self::Adb | Self::Harmony => 0,
         }
     }
 }
@@ -437,7 +439,7 @@ fn endpoint_user_default(config: &ConnectionType) -> String {
 
 fn endpoint_port_default(config: &ConnectionType) -> u16 {
     match config {
-        ConnectionType::Adb { .. } => 0,
+        ConnectionType::Adb { .. } | ConnectionType::Harmony { .. } => 0,
         ConnectionType::Ssh { .. } => default_ssh_port(),
         ConnectionType::Telnet { .. } => super::default_telnet_port(),
         ConnectionType::Rdp { .. } => super::default_rdp_port(),

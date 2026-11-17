@@ -575,6 +575,7 @@ impl NyaTermApp {
                 )
             }
             FileBrowserBackendKind::Adb => return None,
+            FileBrowserBackendKind::Hdc => return None,
         };
         let runtime = &mut self.terminal.assist.commands.path_completion;
         if runtime.jobs.is_none() {

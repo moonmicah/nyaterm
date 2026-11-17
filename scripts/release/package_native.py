@@ -54,9 +54,16 @@ def conpty_files(target: str) -> tuple[Path, ...]:
 
 
 def copy_conpty(destination: Path, target: str) -> list[Path]:
+    files = conpty_files(target)
     source_root = prepare_conpty.STAGING / "resources" / "windows" / "conpty"
+    if not all((source_root / relative).is_file() for relative in files):
+        # The staging derives from the pinned nupkg recorded in
+        # conpty-package.json; rebuild it instead of failing when target/ was
+        # cleaned. `prepare()` is idempotent and only reaches the network when
+        # the nupkg itself is missing.
+        prepare_conpty.prepare()
     copied = []
-    for relative in conpty_files(target):
+    for relative in files:
         source = source_root / relative
         if not source.is_file():
             raise FileNotFoundError(f"prepared ConPTY file not found: {source}")
@@ -313,7 +320,18 @@ def copy_helpers(destination: Path, target: str) -> list[Path]:
             make_executable(binary)
         copied.append(binary)
     copy_android_resources(destination, target)
+    copy_harmony_resources(destination, target)
     return copied
+
+
+def copy_harmony_resources(destination: Path, target: str) -> list[Path]:
+    """Stage the pinned official hdc toolchain, if this target bundles one."""
+    import prepare_harmony
+    staged = prepare_harmony.ensure_staged(target)
+    if staged is None:
+        return []
+    prepare_harmony.stage_runtime(staged, destination)
+    return prepare_harmony.write_resource_manifest(destination, target)
 
 
 def copy_android_resources(destination: Path, target: str) -> list[Path]:
@@ -414,7 +432,7 @@ def create_windows_packages(
     installer_root.mkdir()
     shutil.copy2(binary, installer_root / "NyaTerm.exe")
     installer_helpers = copy_helpers(installer_root, info.target)
-    installer_conpty = [*copy_conpty(installer_root, info.target), *copy_android_resources(installer_root, info.target)]
+    installer_conpty = [*copy_conpty(installer_root, info.target), *copy_android_resources(installer_root, info.target), *copy_harmony_resources(installer_root, info.target)]
     copy_release_documents(installer_root, version)
     shutil.copy2(ICON_DIR / "icon.ico", installer_root / "icon.ico")
 

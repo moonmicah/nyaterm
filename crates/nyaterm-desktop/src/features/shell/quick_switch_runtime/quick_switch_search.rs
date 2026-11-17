@@ -246,7 +246,12 @@ fn item_endpoint(item: &QuickSwitchItem) -> Option<(&str, u16)> {
                 device: nyaterm_core::models::android::AdbDeviceSelector::Tcp { host, port },
                 ..
             } => Some((host, *port)),
+            ConnectionType::Harmony {
+                device: nyaterm_core::models::harmony::HdcDeviceSelector::Tcp { host, port },
+                ..
+            } => Some((host, *port)),
             ConnectionType::Adb { .. }
+            | ConnectionType::Harmony { .. }
             | ConnectionType::LocalTerminal { .. }
             | ConnectionType::Serial { .. } => None,
         },

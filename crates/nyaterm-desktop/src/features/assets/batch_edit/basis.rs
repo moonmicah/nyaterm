@@ -12,7 +12,6 @@ use nyaterm_core::models::{
 };
 use rust_i18n::t;
 use std::collections::HashMap;
-
 /// Renders the counts with the editor's own protocol labels, never raw
 /// identifiers, and joins them with the locale's list separator.
 pub(super) fn asset_batch_kind_counts_label(counts: &[(ConnectionBatchKind, usize)]) -> String {
@@ -955,6 +954,7 @@ pub(in crate::features) fn batch_kind_value(kind: ConnectionBatchKind) -> &'stat
         ConnectionBatchKind::Rdp => "rdp",
         ConnectionBatchKind::Vnc => "vnc",
         ConnectionBatchKind::Adb => "adb",
+        ConnectionBatchKind::Harmony => "harmony",
         ConnectionBatchKind::LocalTerminal => "local",
         ConnectionBatchKind::Serial => "serial",
     }

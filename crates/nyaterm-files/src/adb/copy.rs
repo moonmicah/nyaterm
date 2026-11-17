@@ -20,6 +20,9 @@ fn browser(endpoint: &FileTransferEndpoint) -> (FileBrowserService, RemoteFilePa
         FileTransferEndpoint::Remote { service, path } => {
             (FileBrowserService::Remote(service.clone()), path.clone())
         }
+        FileTransferEndpoint::Hdc { .. } => {
+            unreachable!("HarmonyOS copies use the isolated copy adapter")
+        }
     }
 }
 fn exists(endpoint: &FileTransferEndpoint) -> anyhow::Result<bool> {
@@ -30,6 +33,9 @@ fn exists(endpoint: &FileTransferEndpoint) -> anyhow::Result<bool> {
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(false),
             Err(error) => Err(error.into()),
         },
+        FileTransferEndpoint::Hdc { .. } => {
+            unreachable!("HarmonyOS copies use the isolated copy adapter")
+        }
         FileTransferEndpoint::Remote { .. } => {
             let (service, path) = browser(endpoint);
             Ok(service
@@ -303,6 +309,9 @@ fn node(
                     }
                     FileBrowserService::Remote(service) => {
                         service.set_modified_remote_path(&path, modified)?
+                    }
+                    FileBrowserService::Hdc(_) => {
+                        unreachable!("HarmonyOS copies use the isolated copy adapter")
                     }
                 }
             } else {

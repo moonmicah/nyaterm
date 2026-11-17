@@ -25,7 +25,7 @@ KNOWN_CRATES = frozenset({
     "nyaterm-plugin-host", "nyaterm-rdp-helper", "nyaterm-windows-rdp",
     "nyaterm-remote-desktop", "nyaterm-store", "nyaterm-sync", "nyaterm-terminal",
     "nyaterm-terminal-gpui", "nyaterm-terminal-runtime", "nyaterm-transport", "nyaterm-ui", "nyaterm-vnc-helper",
-    "nyaterm-android-helper",
+    "nyaterm-android-helper", "nyaterm-harmony",
 })
 
 # Include transitive local dependencies, not reverse dependencies. The real tmux
@@ -33,7 +33,7 @@ KNOWN_CRATES = frozenset({
 # Manifest-closure tests guard both sets against dependency drift.
 TMUX_CRATES = frozenset({
     "nyaterm-transport", "nyaterm-terminal", "nyaterm-core", "nyaterm-android",
-    "nyaterm-plugin-api", "nyaterm-mcp-protocol",
+    "nyaterm-harmony", "nyaterm-plugin-api", "nyaterm-mcp-protocol",
 })
 PLUGIN_SDK_CRATES = frozenset({
     "nyaterm-plugin-api", "nyaterm-plugin-host", "nyaterm-core",

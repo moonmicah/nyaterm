@@ -26,6 +26,9 @@ fn key(endpoint: &FileTransferEndpoint) -> anyhow::Result<Vec<u8>> {
                 .raw_path()?
                 .unwrap_or_else(|| path.display_path.as_bytes().to_vec()))
         }
+        FileTransferEndpoint::Hdc { .. } => {
+            unreachable!("HarmonyOS copies use the isolated copy adapter")
+        }
     }
 }
 fn browser(endpoint: &FileTransferEndpoint) -> (FileBrowserService, RemoteFilePath) {
@@ -39,6 +42,9 @@ fn browser(endpoint: &FileTransferEndpoint) -> (FileBrowserService, RemoteFilePa
         }
         FileTransferEndpoint::Adb { service, path } => {
             (FileBrowserService::Adb(service.clone()), path.clone())
+        }
+        FileTransferEndpoint::Hdc { .. } => {
+            unreachable!("HarmonyOS copies use the isolated copy adapter")
         }
     }
 }

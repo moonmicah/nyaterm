@@ -315,6 +315,12 @@ impl Drop for NewTargetGuard {
 }
 
 impl DownloadTemporary {
+    /// Temporary file path. Blocking backends that need a filesystem target (hdc)
+    /// write here and let [`Self::commit`] populate the destination.
+    pub(crate) fn path(&self) -> &Path {
+        &self.path
+    }
+
     /// Copy the resume prefix during preparation, before entering the download loop.
     /// Any preparation failure leaves the original file intact.
     #[cfg(test)]

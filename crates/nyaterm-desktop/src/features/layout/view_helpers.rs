@@ -171,5 +171,6 @@ pub(super) fn session_kind_icon_path(kind: SessionKind) -> &'static str {
         SessionKind::AdbShell | SessionKind::AdbFiles | SessionKind::AdbScreen => {
             "icons/session/terminal.svg"
         }
+        SessionKind::HdcShell => "icons/session/terminal.svg",
     }
 }

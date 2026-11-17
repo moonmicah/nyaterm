@@ -130,6 +130,12 @@ impl NyaTermApp {
                     TextInputSetup::placeholder(rust_i18n::t!("android.bundledAdb")),
                     cx,
                 );
+                self.ensure_text_input(
+                    "settings.harmony.hdc-path",
+                    &self.settings.summary().harmony_hdc_path.clone(),
+                    TextInputSetup::placeholder(rust_i18n::t!("harmony.hdcAutoDetect")),
+                    cx,
+                );
             }
             SettingsTab::Appearance => self.ensure_appearance_inputs(cx),
             SettingsTab::Interaction => self.ensure_interaction_inputs(cx),

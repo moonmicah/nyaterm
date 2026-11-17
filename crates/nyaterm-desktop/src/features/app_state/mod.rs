@@ -106,6 +106,7 @@ pub struct NyaTermApp {
     pub(in crate::features) host_tool_panels: crate::features::remote::HostToolPanels,
     pub(in crate::features) remote_desktop: RemoteDesktopFeatureState,
     pub(in crate::features) android: crate::features::android::AndroidFeatureState,
+    pub(in crate::features) harmony: crate::features::harmony::HarmonyFeatureState,
     pub(in crate::features) security: SecurityFeatureState,
     pub(in crate::features) settings: SettingsFeatureState,
     pub(in crate::features) ai: AiFeatureState,

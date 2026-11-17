@@ -61,6 +61,7 @@ impl NyaTermApp {
                         ConnectionType::Adb { .. },
                         SessionKind::AdbShell | SessionKind::AdbFiles | SessionKind::AdbScreen
                     )
+                    | (ConnectionType::Harmony { .. }, SessionKind::HdcShell)
             )
         });
         if !same_protocol {

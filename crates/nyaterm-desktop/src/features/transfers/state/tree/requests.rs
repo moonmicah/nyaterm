@@ -34,8 +34,9 @@ impl TreeSession {
                 return true;
             }
             let parent = match backend {
-                FileBrowserBackendKind::Remote | FileBrowserBackendKind::Adb => match path.parent()
-                {
+                FileBrowserBackendKind::Remote
+                | FileBrowserBackendKind::Adb
+                | FileBrowserBackendKind::Hdc => match path.parent() {
                     Ok(parent) => parent,
                     Err(_) => return false,
                 },

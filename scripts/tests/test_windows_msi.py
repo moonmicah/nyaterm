@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "release"))
 import package_native
 import verify_native_package
 import windows_msi
-from scripts.tests.test_verify_native_package import fake_pe, stage_android_fixture
+from scripts.tests.test_verify_native_package import fake_pe, stage_android_fixture, stage_harmony_fixture
 
 
 def stage_payload(root: Path, target: str) -> None:
@@ -34,6 +34,7 @@ def stage_payload(root: Path, target: str) -> None:
         path.write_bytes(fake_pe(0xAA64 if "arm64" in relative.parts else 0x8664))
     (root / "conpty/LICENSE.txt").write_text("ConPTY test license", encoding="utf-8")
     stage_android_fixture(root, target)
+    stage_harmony_fixture(root, target)
 
 
 class WindowsMsiTests(unittest.TestCase):

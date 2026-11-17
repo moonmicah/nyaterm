@@ -67,6 +67,9 @@ impl NyaTermApp {
             | SessionLaunchConfig::AdbScreen(config) => {
                 details.push((t!("sessionInfo.host"), config.device.serial()));
             }
+            SessionLaunchConfig::HdcShell(config) => {
+                details.push((t!("sessionInfo.host"), config.device.connect_key()));
+            }
             SessionLaunchConfig::Local(config) => {
                 details.push((
                     t!("sessionInfo.launch"),

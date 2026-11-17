@@ -40,6 +40,7 @@ fn session_start_focus_target(config: &ConnectionType) -> SessionStartFocusTarge
             SessionStartFocusTarget::RemoteDesktop
         }
         ConnectionType::Adb { .. }
+        | ConnectionType::Harmony { .. }
         | ConnectionType::Ssh { .. }
         | ConnectionType::LocalTerminal { .. }
         | ConnectionType::Telnet { .. }
@@ -295,6 +296,11 @@ impl NyaTermApp {
             return true;
         }
 
+        if matches!(connection.config, ConnectionType::Harmony { .. }) {
+            self.start_harmony_connection(connection, options, cx);
+            return true;
+        }
+
         // External clients own no application tab, credential request, or Relay.
         if matches!(&connection.config, ConnectionType::Rdp { backend, .. } if backend == "mstsc") {
             self.start_mstsc_connection(connection, launcher, cx);
@@ -537,6 +543,9 @@ impl NyaTermApp {
         match connection.config.clone() {
             ConnectionType::Adb { .. } => {
                 unreachable!("Android start is routed before credential resolution")
+            }
+            ConnectionType::Harmony { .. } => {
+                unreachable!("HarmonyOS start is routed before credential resolution")
             }
             ConnectionType::LocalTerminal {
                 shell_path,
