@@ -90,7 +90,7 @@ reqwest = { version = "0.13.5", default-features = false, features = ["json", "q
 same-file = "1"
 tempfile = "3"
 glob = "0.3.4"
-gpui = { package = "gpui-fast", version = "=0.1.16", features = [
+gpui = { package = "gpui-fast", version = "=0.1.17", features = [
     "windows-manifest-provided-by-host",
 ] }
 gpui-base = { git = "https://github.com/moonmicah/gpui-kit", rev = "9af47f948a039a399e9dbc646eaadc0f3aa96bc0", features = [
@@ -99,7 +99,7 @@ gpui-base = { git = "https://github.com/moonmicah/gpui-kit", rev = "9af47f948a03
 gpui-kit = { git = "https://github.com/moonmicah/gpui-kit", rev = "9af47f948a039a399e9dbc646eaadc0f3aa96bc0", features = [
     "gpui-fast",
 ] }
-gpui_platform = { package = "gpui-fast-platform", version = "=0.1.16", features = [
+gpui_platform = { package = "gpui-fast-platform", version = "=0.1.17", features = [
     "font-kit",
     "x11",
     "wayland",
@@ -248,15 +248,15 @@ alacritty_terminal = { git = "https://github.com/nyakang/alacritty", rev = "c81f
 # Patch every crate the branch renames: leaving one on the registry would put
 # two copies of the engine in the graph, and the platform backends would then
 # fail to type-check against the wider `ExternalDragPayload`.
-gpui-fast = { git = "https://github.com/moonmicah/gpui-fast", rev = "2fe3d5186f8f513c5b6f0fddc0ff1fed7e603962" }
-gpui-fast-apple = { git = "https://github.com/moonmicah/gpui-fast", rev = "2fe3d5186f8f513c5b6f0fddc0ff1fed7e603962" }
-gpui-fast-linux = { git = "https://github.com/moonmicah/gpui-fast", rev = "2fe3d5186f8f513c5b6f0fddc0ff1fed7e603962" }
-gpui-fast-macos = { git = "https://github.com/moonmicah/gpui-fast", rev = "2fe3d5186f8f513c5b6f0fddc0ff1fed7e603962" }
-gpui-fast-macros = { git = "https://github.com/moonmicah/gpui-fast", rev = "2fe3d5186f8f513c5b6f0fddc0ff1fed7e603962" }
-gpui-fast-platform = { git = "https://github.com/moonmicah/gpui-fast", rev = "2fe3d5186f8f513c5b6f0fddc0ff1fed7e603962" }
-gpui-fast-web = { git = "https://github.com/moonmicah/gpui-fast", rev = "2fe3d5186f8f513c5b6f0fddc0ff1fed7e603962" }
-gpui-fast-wgpu = { git = "https://github.com/moonmicah/gpui-fast", rev = "2fe3d5186f8f513c5b6f0fddc0ff1fed7e603962" }
-gpui-fast-windows = { git = "https://github.com/moonmicah/gpui-fast", rev = "2fe3d5186f8f513c5b6f0fddc0ff1fed7e603962" }
+gpui-fast = { git = "https://github.com/moonmicah/gpui-fast", rev = "3b967e713e87abda7fc8bfd4ca6c12f66867cc34" }
+gpui-fast-apple = { git = "https://github.com/moonmicah/gpui-fast", rev = "3b967e713e87abda7fc8bfd4ca6c12f66867cc34" }
+gpui-fast-linux = { git = "https://github.com/moonmicah/gpui-fast", rev = "3b967e713e87abda7fc8bfd4ca6c12f66867cc34" }
+gpui-fast-macos = { git = "https://github.com/moonmicah/gpui-fast", rev = "3b967e713e87abda7fc8bfd4ca6c12f66867cc34" }
+gpui-fast-macros = { git = "https://github.com/moonmicah/gpui-fast", rev = "3b967e713e87abda7fc8bfd4ca6c12f66867cc34" }
+gpui-fast-platform = { git = "https://github.com/moonmicah/gpui-fast", rev = "3b967e713e87abda7fc8bfd4ca6c12f66867cc34" }
+gpui-fast-web = { git = "https://github.com/moonmicah/gpui-fast", rev = "3b967e713e87abda7fc8bfd4ca6c12f66867cc34" }
+gpui-fast-wgpu = { git = "https://github.com/moonmicah/gpui-fast", rev = "3b967e713e87abda7fc8bfd4ca6c12f66867cc34" }
+gpui-fast-windows = { git = "https://github.com/moonmicah/gpui-fast", rev = "3b967e713e87abda7fc8bfd4ca6c12f66867cc34" }
 ironrdp-client = { git = "https://github.com/nyakang/IronRDP", rev = "5d933375c13b0f95391f1aa1fff6488a647a35f7" }
 ironrdp-connector = { git = "https://github.com/nyakang/IronRDP", rev = "5d933375c13b0f95391f1aa1fff6488a647a35f7" }
 sspi = { git = "https://github.com/nyakang/sspi-rs", rev = "df7ce588457cad66e6f3d0a46b3e35a86eec281b" }

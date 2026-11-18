@@ -80,6 +80,19 @@ nyaterm 线。同日 fork 引擎分支 bump 到 0.1.16（`2fe3d518`），与 gpu
 nyaterm 线的 `gpui-fast ^0.1.14` semver 兼容，nyaterm 侧版本要求同步改
 `="0.1.16"`。
 
+**2026-11-18 跟进 v0.1.17**：上游 4 条新提交（Windows 按目标显示器开窗
+#155、app 被借用时推迟帧请求 #162、软件适配器局部重绘 #150、Linux 暴露
+wgpu context #152），fork rebase 到其上；与 #150 局部重绘在
+`directx_renderer.rs` 的 `draw` 里合并——无 overlay 走 partial redraw，
+有 native overlay 走双通道渲染。fork 版本 bump 到 0.1.17（`27e209e`），
+nyaterm 侧要求 `="0.1.17"`。
+
+同日把 nyakang/zed 的 Windows 文件剪贴板（`d2a0bddd`+`df44bb4f`：
+`App::write_file_clipboard`/`clipboard_revision` + Windows
+`ClipboardDataObject` 逐次投递与流保留）移植到 fork（`3b967e7`）——
+main 的桌面剪贴板功能依赖这两个 API，非 Windows 平台保持 trait 默认
+（bail/None）。
+
 ## 与 main 的 API 差异
 
 main 追随 `nyakang/zed` 的 gpui。2026-11-16 上游 `#148`（Sync with zed
